@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T22:07:13.256591+00:00",
+  "title": "Design System: Downstack",
+  "extensions": {
+    "colorMeta": {
+      "background": {
+        "role": "Canvas and button ink",
+        "displayName": "Charcoal",
+        "canonical": true,
+        "tonalRamp": []
+      },
+      "panel": {
+        "role": "Quiet supporting surface",
+        "displayName": "Panel charcoal",
+        "canonical": true,
+        "tonalRamp": []
+      },
+      "text": {
+        "role": "Reading text and filled rarity marks",
+        "displayName": "Warm white",
+        "canonical": true,
+        "tonalRamp": []
+      },
+      "muted": {
+        "role": "Secondary labels and supporting copy",
+        "displayName": "Muted gray",
+        "canonical": true,
+        "tonalRamp": []
+      },
+      "border": {
+        "role": "Separators and inactive structure",
+        "displayName": "Border gray",
+        "canonical": true,
+        "tonalRamp": []
+      },
+      "primary": {
+        "role": "Primary action and current depth",
+        "displayName": "Vermilion",
+        "canonical": true,
+        "tonalRamp": []
+      },
+      "primary-hover": {
+        "role": "Hover, focus, and low-time text",
+        "displayName": "Light vermilion",
+        "canonical": true,
+        "tonalRamp": []
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Press Start 2P",
+        "purpose": "Self-hosted pixel family for wordmark, prompts, HUD, ranks, points, and primary controls."
+      },
+      "body": {
+        "displayName": "System monospace",
+        "purpose": "Supporting copy and editable answers, with generous line spacing."
+      }
+    },
+    "shadows": [
+      {
+        "name": "Primary stepped edge",
+        "value": "-6px 0 var(--accent), 6px 0 var(--accent), 0 6px #70291e",
+        "purpose": "Hard offset button material; hover substitutes --accent-hover for side edges."
+      },
+      {
+        "name": "Primary pressed edge",
+        "value": "-6px 0 var(--accent), 6px 0 var(--accent), 0 3px #70291e",
+        "purpose": "Pairs with translateY(3px) on enabled active buttons."
+      }
+    ],
+    "motion": [
+      {
+        "name": "Elevator descent",
+        "value": "top 900ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Signature continuous depth movement."
+      },
+      {
+        "name": "Timer update",
+        "value": "transform 100ms linear",
+        "purpose": "Proportional segmented timer update."
+      },
+      {
+        "name": "Primary feedback",
+        "value": "background 100ms, transform 100ms",
+        "purpose": "Hover and press feedback."
+      },
+      {
+        "name": "Reveal launch",
+        "value": "650ms cubic-bezier(0.16, 1, 0.3, 1); translateY(14px) to translateY(0)",
+        "purpose": "One reveal-icon entrance."
+      },
+      {
+        "name": "Reduced motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "All animations and transitions are opt-in under no-preference; reduced motion uses immediate state changes."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "Narrow phone",
+        "value": "max-width: 360px"
+      },
+      {
+        "name": "Phone disclosure layout",
+        "value": "max-width: 760px"
+      },
+      {
+        "name": "Narrow desktop shaft",
+        "value": "max-width: 1100px"
+      },
+      {
+        "name": "Wide shell padding",
+        "value": "min-width: 1600px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Square vermilion pixel control with stepped edges, visible focus, and disabled feedback. Uses the app\u2019s self-hosted Press Start 2P family.",
+      "html": "<div class=\"ds-action\"><button class=\"ds-primary\" type=\"button\">Submit answer</button></div>",
+      "css": ".ds-action{background:#101010;color:#f0eee8;font:16px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;box-sizing:border-box;padding:16px}.ds-primary{border:0;border-radius:0;background:#f14b32;color:#101010;padding:22px 28px;min-height:56px;font:12px/1.7 \"Press Start 2P\",monospace;text-transform:uppercase;margin:0 6px;cursor:pointer;box-shadow:-6px 0 #f14b32,6px 0 #f14b32,0 6px #70291e}.ds-primary:hover:not(:disabled){background:#ff6b53;box-shadow:-6px 0 #ff6b53,6px 0 #ff6b53,0 6px #70291e}.ds-primary:active:not(:disabled){transform:translateY(3px);box-shadow:-6px 0 #f14b32,6px 0 #f14b32,0 3px #70291e}.ds-primary:focus-visible{outline:2px solid #ff6b53;outline-offset:6px}.ds-primary:disabled{cursor:wait;opacity:.65}@media(prefers-reduced-motion:no-preference){.ds-primary{transition:background 100ms,transform 100ms}}"
+    },
+    {
+      "name": "Answer input",
+      "kind": "input",
+      "description": "Visible pixel label above a square system-monospace input. Enter submits through the enclosing application form; pending requests disable the field.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-answer\">Your answer</label><input id=\"ds-answer\" name=\"answer\" type=\"text\" placeholder=\"Type your answer\" autocomplete=\"off\" autocorrect=\"off\" spellcheck=\"false\"></div>",
+      "css": ".ds-field{background:#101010;color:#f0eee8;font:16px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;box-sizing:border-box;padding:16px}.ds-field label{display:block;margin-bottom:14px;font:10px/1.8 \"Press Start 2P\",monospace;text-transform:uppercase}.ds-field input{box-sizing:border-box;width:100%;min-width:0;min-height:56px;border:2px solid #f0eee8;border-radius:0;padding:18px 20px;background:#101010;color:#f0eee8;caret-color:#f14b32;font:inherit}.ds-field input::placeholder{color:#a5a39c;opacity:1}.ds-field input:focus-visible{outline:2px solid #ff6b53;outline-offset:6px}.ds-field input:disabled{border-color:#4e4d49}"
+    },
+    {
+      "name": "Rarity marks",
+      "kind": "custom",
+      "description": "Six monochrome marks accompany a plain-language rank description. Filled count communicates rank without a rainbow or invented answer-frequency percentages.",
+      "html": "<div class=\"ds-rarity\"><p>Rarity: 3 of 6 marks</p><span class=\"ds-marks\" aria-hidden=\"true\"><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i class=\"ds-filled\"></i><i></i><i></i><i></i></span></div>",
+      "css": ".ds-rarity{background:#101010;color:#f0eee8;font:16px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;box-sizing:border-box;padding:16px}.ds-rarity p{margin:0 0 12px;color:#a5a39c;font-size:13px}.ds-marks{display:inline-flex;justify-content:center;gap:7px}.ds-marks i{box-sizing:border-box;display:inline-block;width:12px;height:12px;border:1px solid #a5a39c}.ds-marks .ds-filled{background:#f0eee8;border-color:#f0eee8}"
+    },
+    {
+      "name": "Segmented timer",
+      "kind": "custom",
+      "description": "Static low-time example: numeric seconds and explicit warning supplement the proportional bar. The live app updates scaleX and announces low time once, without flashing.",
+      "html": "<div class=\"ds-timer\"><div class=\"ds-seconds\">04<span>s</span></div><div class=\"ds-track\" role=\"meter\" aria-label=\"Time remaining\" aria-valuemin=\"0\" aria-valuemax=\"30\" aria-valuenow=\"4\" aria-valuetext=\"4 seconds remaining\"><div class=\"ds-bar\"></div></div><p class=\"ds-warning\">Low time \u2014 under 5 seconds</p></div>",
+      "css": ".ds-timer{background:#101010;color:#f0eee8;font:16px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;box-sizing:border-box;display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:16px}.ds-seconds{min-width:90px;color:#ff6b53;font:25px/1.6 \"Press Start 2P\",monospace;font-variant-numeric:tabular-nums}.ds-seconds span{font-size:16px}.ds-track{background:#292929;flex:1;min-width:100px;height:12px;overflow:hidden}.ds-bar{height:100%;background:#f14b32;transform-origin:left;transform:scaleX(.133333);mask-image:repeating-linear-gradient(to right,#000 0,#000 calc(10% - 4px),transparent calc(10% - 4px),transparent 10%)}.ds-warning{width:100%;margin:-16px 0 0;color:#ff6b53;font-size:12px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The computer elevator",
+    "overview": "A restrained pixel arcade. A small vermilion elevator descends through a monochrome computer. Play is quiet and focused; reveal is the reward. Decoration stays in the shaft, with plain reading surfaces for the question, timer, and input.",
+    "keyCharacteristics": [
+      "Warm white reading text on charcoal, gray secondary labels, and vermilion action and location cues.",
+      "Pixel typography for prompts and HUD; system monospace for support and editable answers.",
+      "Flat surfaces, square inputs, crisp pixel icons, and hard stepped button edges.",
+      "Persistent desktop depth shaft; native map disclosure on phones, with depth context above the prompt."
+    ],
+    "rules": [
+      "Use labels and shapes alongside color. Represent rarity with six white marks.",
+      "Keep controls at least 44px high and essential text clear of illustrated textures.",
+      "At 760px and below, prioritize question, input, timer, and current depth; close the map disclosure when timed play begins.",
+      "Clamp the depth marker at Silicon while cumulative numeric meters may exceed 7000m.",
+      "Preserve answer drafts on failures; disable input and show Checking while a request is pending.",
+      "Use explicit low-time text and one assistive announcement below five seconds; never flash.",
+      "Honor reduced-motion preferences by removing animations and transitions."
+    ],
+    "dos": [
+      "Keep prompt and HUD typography in the pixel family.",
+      "Preserve keyboard focus and text equivalents for state changes.",
+      "Keep startup ranks distinct from computing layers and question progress."
+    ],
+    "donts": [
+      "Do not use purple, yellow, or green themes.",
+      "Do not invent answer-frequency percentages, extra currencies, lives, or XP.",
+      "Do not put illustrated textures behind essential text.",
+      "Do not reset legacy daily player storage on a rebrand.",
+      "Do not introduce rounded cards or glass effects."
+    ]
+  }
+}

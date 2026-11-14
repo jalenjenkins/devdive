@@ -33,14 +33,14 @@ test('a perfect-tier round scores and deepens as specified', () => {
       last = env.game.answer(view.roundToken, view.index, answerFor(prompt, 6));
       assert.equal(last.result.tier, 6);
       assert.equal(last.result.points, 100);
-      if (last.next) view = last.next;
+      if (last.next) view = env.game.next(view.roundToken, last.next.index);
     }
     assert.equal(last.score, 700);
     assert.equal(last.depth, 8400);
     assert.equal(last.summary.layer.name, 'Silicon');
     assert.equal(last.summary.rank, 1);
     assert.equal(last.summary.emojiRow, '🟥'.repeat(7));
-    assert.match(last.summary.share, /^DevDive #\d+ 🟥{7}/u);
+    assert.match(last.summary.share, /^Downstack #\d+ 🟥{7}/u);
   } finally {
     env.cleanup();
   }
@@ -123,7 +123,7 @@ test('one attempt per day: finishing blocks a replay but not tomorrow', () => {
     let view = env.game.start(PLAYER);
     for (let i = 0; i < 7; i++) {
       const out = env.game.answer(view.roundToken, view.index, 'nope');
-      if (out.next) view = out.next;
+      if (out.next) view = env.game.next(view.roundToken, out.next.index);
     }
     const again = env.game.start(PLAYER);
     assert.equal(again.finished, true);
@@ -168,7 +168,7 @@ test('leaderboard orders by score then depth, and names are sanitized', () => {
       let view = env.game.start(id, name);
       for (let i = 0; i < 7; i++) {
         const out = env.game.answer(view.roundToken, view.index, answerFor(promptOf(env, view), tier));
-        if (out.next) view = out.next;
+        if (out.next) view = env.game.next(view.roundToken, out.next.index);
       }
     };
     play('player-low-0001', 'Low', 1);
@@ -194,4 +194,60 @@ test('answers are logged for the feedback loop', () => {
   } finally {
     env.cleanup();
   }
+});
+
+test('reveal time is untimed and the next prompt stays hidden until activated', () => {
+  const env = setup();
+  try {
+    const first = env.game.start(PLAYER);
+    const out = env.game.answer(first.roundToken, 0, answerFor(promptOf(env, first), 4));
+    assert.equal(out.result.tierName, 'Breakout');
+    assert.deepEqual(out.next, { index: 1, total: 7 });
+    env.clock.t += 120000;
+    assert.throws(() => env.game.answer(first.roundToken, 1, 'guess'),
+      (e) => e.status === 409 && e.extra.needsNext === true);
+    const next = env.game.next(first.roundToken, 1);
+    assert.equal(next.index, 1);
+    assert.equal(next.msLeft, 25000);
+    assert.ok(next.prompt.text);
+    env.clock.t += 4000;
+    assert.equal(env.game.next(first.roundToken, 1).msLeft, 21000);
+    env.clock.t += 23000;
+    assert.equal(env.game.answer(first.roundToken, 1, answerFor(promptOf(env, next), 6)).result.timedOut, true);
+  } finally { env.cleanup(); }
+});
+
+test('resuming from a reveal starts the next timer without forfeiting it', () => {
+  const env = setup();
+  try {
+    const first = env.game.start(PLAYER);
+    env.game.answer(first.roundToken, 0, 'not-a-match');
+    env.clock.t += 120000;
+    const resumed = env.game.start(PLAYER);
+    assert.equal(resumed.index, 1);
+    assert.equal(resumed.msLeft, 25000);
+    assert.equal(resumed.tiers.length, 1);
+  } finally { env.cleanup(); }
+});
+
+test('automatic empty submission at zero seconds is reported as a timeout', () => {
+  const env = setup();
+  try {
+    const first = env.game.start(PLAYER);
+    env.clock.t += 25000;
+    assert.equal(env.game.answer(first.roundToken, 0, '').result.timedOut, true);
+  } finally { env.cleanup(); }
+});
+
+test('next rejects invalid tokens and indices and paused rounds are swept', () => {
+  const env = setup();
+  try {
+    const first = env.game.start(PLAYER);
+    assert.throws(() => env.game.next('missing', 0), (e) => e.status === 404);
+    assert.throws(() => env.game.next(first.roundToken, 1), (e) => e.status === 409);
+    env.game.answer(first.roundToken, 0, 'not-a-match');
+    env.clock.t += 3600001;
+    env.game.sweep();
+    assert.throws(() => env.game.next(first.roundToken, 1), (e) => e.status === 404);
+  } finally { env.cleanup(); }
 });

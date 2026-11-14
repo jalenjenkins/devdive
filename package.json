@@ -1,7 +1,7 @@
 {
-  "name": "devdive",
+  "name": "downstack",
   "version": "1.0.0",
-  "description": "A daily rare-answer trivia game for developers. Dive through the stack, one obscure answer at a time.",
+  "description": "A daily rare-answer trivia game for developers. Startup ranks. Pixel art. One daily descent through the stack.",
   "license": "MIT",
   "private": true,
   "engines": { "node": ">=20" },

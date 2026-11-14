@@ -1,13 +1,21 @@
-# DevDive
+# Downstack (formerly DevDive)
 
-A daily rare-answer trivia game for developers. Seven prompts a day, about 25 seconds each. Any correct answer scores, but the rarer it is, the more points you earn and the deeper you dive through the stack: Browser, Framework, Runtime, Operating System, Kernel, Firmware, Silicon.
+A daily pixel-arcade rare-answer trivia game for developers. Seven prompts a day, 25 seconds each. Any correct answer scores, but the rarer it is, the more points you earn and the deeper you dive through the stack: Browser, Framework, Runtime, Operating System, Kernel, Firmware, Silicon.
 
 Zero runtime dependencies. Needs Node 20 or newer.
 
 ```
 npm start            # http://localhost:3000
-npm test             # 46 tests, no network needed
+npm test             # tests run locally, no network needed
 ```
+
+## Pixel arcade redesign
+
+The UI uses charcoal, warm white, and vermilion, a persistent computer-depth shaft, and self-hosted Press Start 2P for the prompt and game labels. Answer ranks are **Vibecoder → Indie Hacker → Bootstrapped → Breakout → Unicorn → Founder Lore**; point values, meter rewards, thresholds, and matching are unchanged. On phones, current depth stays visible and the full vertical map is available under **Explore the stack**. Local fonts and art work under the existing self-only CSP; there are no runtime dependencies or external font requests.
+
+The reveal is untimed. After answering, `POST /api/answer` returns the next question's index and total, **not its prompt**. `POST /api/next` with `{roundToken, index}` atomically discloses that prompt and starts its server timer. Retrying Next does not reset the clock. `POST /api/start` resumes an active or paused round. This replaces the previous response shape that exposed the next prompt and began its timer during reveal; API clients must activate Next before answering. Existing `devdive.pid` and `devdive.name` localStorage keys are retained.
+
+See `DESIGN.md` for the implemented visual system, `PRODUCT.md` for product constraints, and `public/assets/SOURCES.md` for asset provenance. The clipboard fallback exposes selectable text if browser clipboard access is unavailable.
 
 ## How it works
 
@@ -95,5 +103,7 @@ Run a single instance. Active rounds live in memory, so two instances would not 
 - **Originality.** The mechanic of rewarding rare correct answers is generic, but write your own prompts, branding and visuals. Do not reuse another game's content.
 
 ## Tests
+
+The redesign adds coverage for untimed reveals, prompt disclosure, idempotent Next, pause/resume, timeout classification, real depth positions, countdown boundaries, and startup scoring. There are 53 passing Node tests. Browser verification also exercised all six ranks, no-match, a full round, replay, clipboard fallback, network recovery, pending submission, and widths from 320px to 1440px.
 
 `npm test` covers the matcher (typos, prefixes, ambiguity), bank integrity (no alias collisions, tiers), daily scheduling (determinism, category spread, rejection swaps), game rules (scoring, timeouts, grace window, resume, one attempt per day, no answer leakage), the HTTP layer (security headers, path traversal, rate limiting, admin auth), and the refill pipeline against a fake Claude API (bogus answers dropped, budget cap, give-up after repeated rejections).

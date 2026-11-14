@@ -33,11 +33,18 @@ test('serves the front end with security headers', async () => {
   try {
     const page = await s.call('/');
     assert.equal(page.status, 200);
-    assert.match(page.text, /DevDive/);
+    assert.match(page.text, /Downstack/);
     assert.match(page.headers.get('content-security-policy'), /default-src 'self'/);
     assert.equal(page.headers.get('x-content-type-options'), 'nosniff');
     assert.equal((await s.call('/app.js')).status, 200);
     assert.equal((await s.call('/style.css')).status, 200);
+    assert.equal((await s.call('/ui.js')).status, 200);
+    const font = await fetch(s.base + '/fonts/press-start-2p.ttf');
+    assert.equal(font.status, 200);
+    assert.equal(font.headers.get('content-type'), 'font/ttf');
+    const art = await fetch(s.base + '/assets/shaft.png');
+    assert.equal(art.status, 200);
+    assert.equal(art.headers.get('content-type'), 'image/png');
   } finally {
     await s.stop();
   }
@@ -77,7 +84,12 @@ test('plays a full round over HTTP without ever seeing the answer bank early', a
       });
       assert.equal(last.status, 200);
       assert.equal(last.json.result.points, 55);
-      if (last.json.next) view = last.json.next;
+      if (last.json.next) {
+        assert.ok(!('prompt' in last.json.next));
+        const next = await s.call('/api/next', { method: 'POST', body: { roundToken: view.roundToken, index: last.json.next.index } });
+        assert.equal(next.status, 200);
+        view = next.json;
+      }
     }
     assert.equal(last.json.score, 385);
     assert.equal(last.json.summary.depth, 2800);

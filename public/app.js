@@ -1,211 +1,498 @@
-'use strict';
+"use strict";
 
 (() => {
   const $ = (selector) => document.querySelector(selector);
+  const UI = window.DownstackUI;
+  const SCREENS = ["intro", "question", "reveal", "results"];
+  const state = {
+    token: null,
+    view: null,
+    deadline: 0,
+    timer: null,
+    busy: false,
+    layers: [],
+    ranks: [],
+    lastResult: null,
+    next: null,
+    summary: null,
+  };
+  const meters = (value) => new Intl.NumberFormat("en-US").format(value) + " m";
 
-  const SCREENS = ['intro', 'question', 'reveal', 'results'];
-  const state = { token: null, view: null, deadline: 0, timer: null, submitting: false, layers: [] };
-
-  // A random id kept in localStorage identifies the player. There are no accounts.
+  // Keep DevDive's storage keys so existing players retain their daily identity.
   function playerId() {
+    if (state.playerId) return state.playerId;
     try {
-      let id = localStorage.getItem('devdive.pid');
-      if (!id) {
-        id = crypto.randomUUID();
-        localStorage.setItem('devdive.pid', id);
-      }
-      return id;
+      state.playerId =
+        localStorage.getItem("devdive.pid") || crypto.randomUUID();
+      localStorage.setItem("devdive.pid", state.playerId);
     } catch {
-      return crypto.randomUUID();
+      state.playerId = crypto.randomUUID();
     }
+    return state.playerId;
   }
 
   function savedName() {
-    try { return localStorage.getItem('devdive.name') || ''; } catch { return ''; }
-  }
-
-  function saveName(name) {
-    try { localStorage.setItem('devdive.name', name); } catch { /* storage unavailable */ }
+    try {
+      return localStorage.getItem("devdive.name") || "";
+    } catch {
+      return "";
+    }
   }
 
   async function api(path, body) {
-    const res = await fetch(path, {
-      method: body ? 'POST' : 'GET',
-      headers: { 'content-type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const err = new Error(data.error || res.statusText);
-      err.status = res.status;
-      err.data = data;
-      throw err;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(path, {
+        method: body ? "POST" : "GET",
+        headers: { "content-type": "application/json" },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        const error = new Error(data.error || response.statusText);
+        error.status = response.status;
+        error.data = data;
+        throw error;
+      }
+      return data;
+    } finally {
+      clearTimeout(timeout);
     }
-    return data;
   }
 
   function show(name) {
-    for (const s of SCREENS) $(`#screen-${s}`).hidden = s !== name;
+    clearInterval(state.timer);
+    for (const screen of SCREENS)
+      $("#screen-" + screen).hidden = screen !== name;
+    document.body.dataset.screen = name;
+    // Opening the decorative map must never force timed play below the fold.
+    if (window.matchMedia("(max-width: 760px)").matches)
+      $("#depth-details").open = false;
   }
 
-  function setError(selector, message) {
-    const el = $(selector);
-    el.textContent = message || '';
-    el.hidden = !message;
+  function setError(selector, message = "") {
+    const element = $(selector);
+    element.textContent = message;
+    element.hidden = !message;
   }
 
-  // ---- question screen ---------------------------------------------------
+  function rarityMarks(element, tier) {
+    element.replaceChildren();
+    element.setAttribute(
+      "aria-label",
+      tier
+        ? "Rarity " + tier + " of 6: " + UI.rankDescription(tier)
+        : "No scored answer",
+    );
+    for (let i = 1; i <= 6; i++) {
+      const mark = document.createElement("i");
+      mark.classList.toggle("filled", i <= tier);
+      mark.setAttribute("aria-hidden", "true");
+      element.append(mark);
+    }
+  }
 
-  function renderLayers(depth) {
-    const list = $('#layers');
+  function renderDepth(depth) {
+    $("#depth-value").textContent = meters(depth);
+    const current = UI.currentLayer(depth, state.layers);
+    $("#depth-layer").textContent = state.layers[current]?.name || "Browser";
+    $("#elevator").style.top = UI.depthPercent(depth, state.layers) + "%";
+    const list = $("#layers");
     list.replaceChildren();
-    let current = 0;
-    state.layers.forEach((layer, i) => { if (depth >= layer.from) current = i; });
     state.layers.forEach((layer, i) => {
-      const li = document.createElement('li');
-      li.textContent = layer.name;
-      if (i <= current) li.classList.add('reached');
-      if (i === current) li.classList.add('current');
-      list.appendChild(li);
+      const item = document.createElement("li");
+      item.style.top = UI.depthPercent(layer.from, state.layers) + "%";
+      item.classList.toggle("reached", i <= current);
+      item.classList.toggle("current", i === current);
+      if (i === current) item.setAttribute("aria-current", "step");
+      const name = document.createElement("span");
+      name.className = "layer-title";
+      name.textContent = layer.name;
+      const threshold = document.createElement("span");
+      threshold.className = "layer-meters";
+      threshold.textContent = meters(layer.from);
+      item.append(name, threshold);
+      list.append(item);
     });
+  }
+
+  function renderProgress(index, total) {
+    $("#q-count").textContent = "Question " + (index + 1) + " / " + total;
+    const list = $("#q-progress");
+    list.replaceChildren();
+    for (let i = 0; i < total; i++) {
+      const item = document.createElement("li");
+      item.classList.toggle("complete", i < index);
+      item.classList.toggle("active", i === index);
+      item.setAttribute(
+        "aria-label",
+        "Question " +
+          (i + 1) +
+          (i < index
+            ? ", completed"
+            : i === index
+              ? ", current"
+              : ", upcoming"),
+      );
+      if (i === index) item.setAttribute("aria-current", "step");
+      list.append(item);
+    }
+  }
+
+  function setAnswerBusy(busy) {
+    state.busy = busy;
+    $("#answer-form").setAttribute("aria-busy", String(busy));
+    $("#answer").disabled = busy;
+    $("#submit").disabled = busy;
+    $("#submit").textContent = busy ? "Checking…" : "Submit";
   }
 
   function renderQuestion(view) {
     state.view = view;
     state.token = view.roundToken;
-    $('#q-count').textContent = `Question ${view.index + 1} of ${view.total}`;
-    $('#q-layer').textContent = view.layer.name;
-    $('#q-score').textContent = `${view.score} pts · ${view.depth} m`;
-    $('#q-text').textContent = view.prompt.text;
-    $('#answer').value = '';
-    renderLayers(view.depth);
-    setError('#q-error', '');
-    show('question');
-    $('#answer').focus();
+    setAnswerBusy(false);
+    renderProgress(view.index, view.total);
+    $("#q-text").textContent = view.prompt.text;
+    $("#answer").value = "";
+    $("#q-score").textContent = view.score + " pts";
+    const last = state.lastResult;
+    const previousTier = view.tiers.at(-1);
+    $("#last-rank").textContent = last
+      ? last.matched
+        ? last.tierName
+        : last.timedOut
+          ? "Missed the launch"
+          : "Launch failed"
+      : previousTier !== undefined
+        ? state.ranks.find((r) => r.tier === previousTier)?.name ||
+          "Launch failed"
+        : "Your first descent";
+    $("#last-gain").textContent = last
+      ? "+" + last.points + " pts · +" + meters(last.depthGained)
+      : "Rarer answers go deeper.";
+    rarityMarks($("#last-rarity"), last?.tier || previousTier || 0);
+    renderDepth(view.depth);
+    setError("#q-error");
+    show("question");
+    $("#answer").focus({ preventScroll: true });
+    if (window.matchMedia("(max-width: 760px)").matches)
+      $("#main").scrollIntoView({ block: "start" });
     startTimer(view.msLeft, view.totalMs);
   }
 
-  function startTimer(msLeft, totalMs) {
+  function startTimer(msLeft, totalMs, autoSubmit = true) {
     clearInterval(state.timer);
-    state.deadline = Date.now() + msLeft;
-    const bar = $('#timer-bar');
+    state.deadline = Date.now() + Math.max(0, msLeft);
+    let announced = false;
+    $("#timer-announcement").textContent = "";
     const tick = () => {
       const left = Math.max(0, state.deadline - Date.now());
-      bar.style.transform = `scaleX(${left / totalMs})`;
-      bar.classList.toggle('low', left < 5000);
-      $('#q-seconds').textContent = `${Math.ceil(left / 1000)} seconds left`;
+      const seconds = UI.secondsLeft(left);
+      $("#q-seconds").replaceChildren(String(seconds));
+      const suffix = document.createElement("span");
+      suffix.textContent = "s";
+      $("#q-seconds").append(suffix);
+      $("#q-seconds").setAttribute(
+        "aria-label",
+        seconds + " seconds remaining",
+      );
+      $("#timer-bar").style.transform =
+        "scaleX(" + Math.max(0, Math.min(1, left / totalMs)) + ")";
+      $("#timer").classList.toggle("low", left <= 5000);
+      $("#time-warning").hidden = left > 5000;
+      if (left <= 5000 && !announced) {
+        $("#timer-announcement").textContent =
+          "Five seconds or less remaining.";
+        announced = true;
+      }
       if (left <= 0) {
         clearInterval(state.timer);
-        submit(true);
+        if (autoSubmit && !state.busy) void submit(true);
       }
     };
-    tick();
+    // Arm the interval first so an already expired view can clear it in tick().
     state.timer = setInterval(tick, 100);
+    tick();
   }
 
   async function submit(timedOut = false) {
-    if (state.submitting || !state.view) return;
-    state.submitting = true;
+    if (state.busy || !state.view) return;
+    const deadline = state.deadline;
+    const input = timedOut ? "" : $("#answer").value;
+    setAnswerBusy(true);
     clearInterval(state.timer);
-    const input = timedOut ? '' : $('#answer').value;
+    setError("#q-error");
     try {
-      const data = await api('/api/answer', { roundToken: state.token, index: state.view.index, input });
+      const data = await api("/api/answer", {
+        roundToken: state.token,
+        index: state.view.index,
+        input,
+      });
       renderReveal(data);
-    } catch (err) {
-      if (err.status === 409 && err.data && err.data.state) {
-        renderQuestion(err.data.state);
-      } else if (err.status === 404) {
-        setError('#q-error', 'This round has expired. Reload to start again.');
+    } catch (error) {
+      setAnswerBusy(false);
+      if (error.status === 409 && error.data?.state) {
+        renderQuestion(error.data.state);
+      } else if (error.status === 404 || error.data?.needsNext) {
+        setError(
+          "#q-error",
+          "This question is no longer active. Reload to resume your daily dive.",
+        );
       } else {
-        setError('#q-error', 'Could not reach the server. Try again.');
-        startTimer(Math.max(0, state.deadline - Date.now()), state.view.totalMs);
+        setError(
+          "#q-error",
+          "Could not confirm your answer. Your text is saved here. Press Submit to retry, or reload to resume.",
+        );
+        startTimer(
+          Math.max(0, deadline - Date.now()),
+          state.view.totalMs,
+          false,
+        );
+        $("#answer").focus({ preventScroll: true });
       }
-    } finally {
-      state.submitting = false;
     }
   }
-
-  // ---- reveal screen -----------------------------------------------------
 
   function renderReveal(data) {
-    const r = data.result;
-    const badge = $('#reveal-badge');
-    badge.className = `badge ${r.matched ? 'hit' : 'miss'}`;
-    badge.textContent = r.matched ? `${r.emoji} ${r.tierName}` : r.timedOut ? '⏱ Out of time' : '✗ No match';
-    $('#reveal-points').textContent = r.matched ? `+${r.points} pts · +${r.depthGained} m deeper` : '+0';
-    $('#reveal-answer').textContent = r.matched ? `Your answer: ${r.canonical}` : 'That was not on the list for this prompt.';
-    $('#reveal-fact').textContent = r.fact ? `Fun fact: ${r.fact}` : '';
-    $('#reveal-rarest').textContent = r.rarest.length ? `Deep cuts you could have said: ${r.rarest.join(', ')}` : '';
-
-    const last = !data.next;
-    $('#next').textContent = last ? 'See results' : 'Next';
-    $('#next').onclick = () => (last ? renderResults(data.summary) : renderQuestion(data.next));
-    show('reveal');
-    $('#next').focus();
+    const result = data.result;
+    state.lastResult = result;
+    state.next = data.next;
+    state.summary = data.summary;
+    setAnswerBusy(false);
+    $("#reveal-count").textContent =
+      "Question " + (state.view.index + 1) + " / " + state.view.total;
+    $("#reveal-status").textContent = result.matched
+      ? "Correct answer"
+      : result.timedOut
+        ? "Out of time"
+        : "No match";
+    $("#reveal-prompt").textContent = state.view.prompt.text;
+    $("#reveal-answer").textContent =
+      result.canonical ||
+      (result.timedOut
+        ? "Your timer ran out."
+        : "That answer wasn’t on the list.");
+    $("#reveal-icon").src = result.matched
+      ? "/assets/rocket.svg"
+      : "/assets/stop.svg";
+    $("#reveal-rank").textContent = result.matched
+      ? result.tierName
+      : result.timedOut
+        ? "Missed the launch"
+        : "Launch failed";
+    $("#reveal-description").textContent = result.matched
+      ? UI.rankDescription(result.tier)
+      : "No points this time. Keep going.";
+    rarityMarks($("#reveal-rarity"), result.tier);
+    $("#reveal-points").textContent =
+      "+" + result.points + " pts · +" + meters(result.depthGained);
+    $("#reveal-flavor").textContent = result.matched
+      ? UI.rankFlavor(result.tier)
+      : UI.rankFlavor(0);
+    $("#reveal-total").textContent = "Total " + data.score + " pts";
+    $("#reveal-fact").textContent = result.fact
+      ? "Deep cut: " + result.fact
+      : "";
+    $("#reveal-rarest").textContent = result.rarest?.length
+      ? "Other deep cuts: " + result.rarest.join(", ")
+      : "";
+    $("#next").textContent = data.next ? "Next question" : "See results";
+    $("#next-note").textContent = data.next
+      ? "Take a breath. The next timer starts when you do."
+      : "Your daily descent is complete.";
+    $("#next").disabled = false;
+    setError("#next-error");
+    show("reveal");
+    renderDepth(data.depth);
+    $("#next").focus({ preventScroll: true });
+    $("#main").scrollIntoView({ block: "start" });
+    // Announce the result once without re-announcing a whole subtree on each update.
+    $("#timer-announcement").textContent = "";
+    $("#game-announcement").textContent =
+      (result.matched
+        ? result.tierName + ". "
+        : result.timedOut
+          ? "Out of time. "
+          : "No match. ") +
+      result.points +
+      " points. " +
+      meters(result.depthGained) +
+      " deeper. Current depth " +
+      meters(data.depth) +
+      ".";
   }
 
-  // ---- results screen ----------------------------------------------------
+  async function nextQuestion() {
+    if ($("#next").disabled) return;
+    if (!state.next) return renderResults(state.summary);
+    $("#next").disabled = true;
+    $("#next").textContent = "Starting…";
+    setError("#next-error");
+    try {
+      const view = await api("/api/next", {
+        roundToken: state.token,
+        index: state.next.index,
+      });
+      renderQuestion(view);
+    } catch {
+      $("#next").disabled = false;
+      $("#next").textContent = "Next question";
+      setError(
+        "#next-error",
+        "Could not load the next prompt. Try again; its clock cannot be reset.",
+      );
+    }
+  }
 
   function renderResults(summary) {
-    $('#res-depth').textContent = `${summary.depth} m · ${summary.layer.name}`;
-    $('#res-score').textContent = `${summary.score} points`;
-    $('#res-row').textContent = summary.emojiRow;
-    $('#res-rank').textContent = `Rank ${summary.rank} of ${summary.totalPlayers} today`;
-    $('#copy-status').textContent = '';
-
-    const board = $('#board');
+    state.summary = summary;
+    renderDepth(summary.depth);
+    $("#res-depth").textContent =
+      meters(summary.depth) + " · " + summary.layer.name;
+    $("#res-score").textContent = summary.score + " points";
+    const row = $("#res-row");
+    row.replaceChildren();
+    summary.tiers.forEach((tier, i) => {
+      const item = document.createElement("li");
+      item.textContent = tier || "×";
+      item.classList.toggle("hit", tier > 0);
+      item.setAttribute(
+        "aria-label",
+        "Question " +
+          (i + 1) +
+          ": " +
+          (state.ranks.find((r) => r.tier === tier)?.name || "No match"),
+      );
+      item.title = item.getAttribute("aria-label");
+      row.append(item);
+    });
+    $("#res-rank").textContent =
+      "Rank " + summary.rank + " of " + summary.totalPlayers + " today";
+    $("#copy-status").textContent = "";
+    $("#share-text").hidden = true;
+    $("#share-label").hidden = true;
+    const board = $("#board");
     board.replaceChildren();
     for (const entry of summary.leaderboard) {
-      const li = document.createElement('li');
-      li.textContent = `${entry.name} — ${entry.score} pts, ${entry.depth} m`;
-      board.appendChild(li);
+      const item = document.createElement("li");
+      const name = document.createElement("span");
+      name.className = "board-name";
+      name.textContent = entry.name;
+      const score = document.createElement("span");
+      score.className = "board-score";
+      score.textContent = entry.score + " pts · " + meters(entry.depth);
+      item.append(name, score);
+      board.append(item);
     }
-
-    $('#copy').onclick = async () => {
-      try {
-        await navigator.clipboard.writeText(summary.share);
-        $('#copy-status').textContent = 'Copied!';
-      } catch {
-        window.prompt('Copy your result:', summary.share);
-      }
-    };
-    show('results');
+    show("results");
+    $("#copy").focus({ preventScroll: true });
+    $("#main").scrollIntoView({ block: "start" });
   }
 
-  // ---- startup -----------------------------------------------------------
+  async function copyResult() {
+    try {
+      await navigator.clipboard.writeText(state.summary.share);
+      $("#copy-status").textContent = "Copied!";
+    } catch {
+      $("#copy-status").textContent = "Select and copy the text below.";
+      $("#share-label").hidden = false;
+      const field = $("#share-text");
+      field.hidden = false;
+      field.value = state.summary.share;
+      field.focus();
+      field.select();
+    }
+  }
 
   async function begin() {
-    const name = $('#name').value.trim();
-    saveName(name);
-    setError('#intro-error', '');
-    $('#start').disabled = true;
+    $("#start").disabled = true;
+    $("#start").textContent = "Starting…";
+    const name = $("#name").value.trim();
     try {
-      const data = await api('/api/start', { playerId: playerId(), name });
+      localStorage.setItem("devdive.name", name);
+    } catch {
+      /* Storage is optional. */
+    }
+    setError("#intro-error");
+    try {
+      const data = await api("/api/start", { playerId: playerId(), name });
       if (data.finished) renderResults(data.summary);
       else renderQuestion(data);
-    } catch (err) {
-      setError('#intro-error', err.message === 'no prompts available today' ? 'No prompts are available today.' : 'Could not start. Try again.');
+    } catch (error) {
+      setError(
+        "#intro-error",
+        error.message === "no prompts available today"
+          ? "No prompts are available today. Please come back later."
+          : "Could not start your dive. Try again.",
+      );
     } finally {
-      $('#start').disabled = false;
+      $("#start").disabled = false;
+      $("#start").textContent = "Start today’s dive";
     }
   }
 
-  async function init() {
-    $('#name').value = savedName();
-    $('#start').addEventListener('click', begin);
-    $('#answer-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      submit(false);
-    });
+  async function loadMeta() {
+    $("#retry-meta").hidden = true;
+    $("#start").disabled = true;
+    setError("#intro-error");
     try {
-      const meta = await api('/api/meta');
+      const meta = await api("/api/meta");
       state.layers = meta.layers;
-      $('#puzzle-no').textContent = `#${meta.puzzleNumber} · ${meta.date}`;
+      state.ranks = meta.tiers;
+      $("#puzzle-no").textContent =
+        "Daily #" + String(meta.puzzleNumber).padStart(3, "0");
+      $("#puzzle-date").textContent = meta.date;
+      $("#puzzle-date").dateTime = meta.date;
+      $("#question-duration").textContent = meta.questionSeconds;
+      const list = $("#rank-list");
+      list.replaceChildren();
+      for (const rank of meta.tiers) {
+        const item = document.createElement("li");
+        const name = document.createElement("strong");
+        name.textContent = rank.tier + ". " + rank.name;
+        item.append(
+          name,
+          document.createTextNode(
+            UI.rankDescription(rank.tier) +
+              " · " +
+              rank.points +
+              " pts · " +
+              meters(rank.depth),
+          ),
+        );
+        list.append(item);
+      }
+      renderDepth(0);
+      rarityMarks($("#last-rarity"), 0);
+      $("#start").disabled = false;
+      $("#start").textContent = "Start today’s dive";
     } catch {
-      setError('#intro-error', 'Could not reach the server.');
+      $("#puzzle-no").textContent = "Offline";
+      $("#start").textContent = "Waiting for connection";
+      $("#retry-meta").hidden = false;
+      setError(
+        "#intro-error",
+        "Could not connect. Check your connection, then reconnect below.",
+      );
     }
-    show('intro');
   }
 
-  init();
+  $("#name").value = savedName();
+  $("#start").addEventListener("click", begin);
+  $("#retry-meta").addEventListener("click", loadMeta);
+  $("#next").addEventListener("click", nextQuestion);
+  $("#copy").addEventListener("click", copyResult);
+  $("#answer-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    void submit();
+  });
+  const narrow = window.matchMedia("(max-width: 760px)");
+  $("#depth-details").open = !narrow.matches;
+  narrow.addEventListener("change", (event) => {
+    $("#depth-details").open = !event.matches;
+  });
+  show("intro");
+  void loadMeta();
 })();

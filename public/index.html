@@ -1,81 +1,256 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DevDive: a daily rare-answer game for developers</title>
-  <meta name="description" content="Seven developer trivia prompts a day. The rarer your correct answer, the deeper you dive through the stack.">
-  <link rel="stylesheet" href="/style.css">
-</head>
-<body>
-  <header class="top">
-    <h1>Dev<span>Dive</span></h1>
-    <p id="puzzle-no" class="muted"></p>
-  </header>
-
-  <main>
-    <!-- Intro -->
-    <section id="screen-intro" class="screen">
-      <p class="lead">Seven prompts. About 25 seconds each. <strong>Any correct answer scores, but the rarer it is, the deeper you dive</strong> through the stack, from Browser down to Silicon.</p>
-      <ul class="how">
-        <li>Type an answer and press Enter.</li>
-        <li>Obvious answers are worth little. Deep cuts are worth a lot.</li>
-        <li>One attempt per day. Same prompts for everyone.</li>
-      </ul>
-      <label class="field">
-        <span>Display name (optional)</span>
-        <input id="name" type="text" maxlength="16" autocomplete="nickname" spellcheck="false">
-      </label>
-      <button id="start" class="primary" type="button">Start today's dive</button>
-      <p id="intro-error" class="error" role="alert" hidden></p>
-    </section>
-
-    <!-- Question -->
-    <section id="screen-question" class="screen" hidden>
-      <div class="status">
-        <span id="q-count" class="muted"></span>
-        <span id="q-layer" class="layer-name"></span>
-        <span id="q-score" class="muted"></span>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101010" />
+    <title>Downstack — daily deep cuts</title>
+    <meta
+      name="description"
+      content="Seven developer trivia prompts. Startup ranks. One daily descent through the computing stack. Formerly DevDive."
+    />
+    <link rel="icon" href="/assets/elevator.svg" type="image/svg+xml" />
+    <link
+      rel="preload"
+      href="/fonts/press-start-2p.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <p id="game-announcement" class="sr-only" role="status"></p>
+    <a class="skip-link" href="#main">Skip to game</a>
+    <div class="game-shell">
+      <aside class="depth-panel" aria-label="Depth through the computing stack">
+        <div class="depth-heading">
+          <span class="label">Current depth</span
+          ><strong id="depth-value">0 m</strong
+          ><span id="depth-layer">Browser</span>
+        </div>
+        <details id="depth-details" open>
+          <summary>Explore the stack</summary>
+          <div class="depth-map">
+            <div class="shaft-art" aria-hidden="true"></div>
+            <div class="depth-cable" aria-hidden="true"></div>
+            <ol id="layers" class="layers"></ol>
+            <div id="elevator" class="elevator" aria-hidden="true">
+              <img src="/assets/elevator.svg" width="36" height="44" alt="" />
+            </div>
+          </div>
+        </details>
+        <p class="depth-note">
+          The rarer the answer,<br />the deeper the dive.
+        </p>
+      </aside>
+      <div class="play-column">
+        <header class="top">
+          <div class="brand">
+            <img src="/assets/elevator.svg" width="24" height="30" alt="" />
+            <div>
+              <h1>Downstack</h1>
+              <p>Daily deep cuts</p>
+            </div>
+          </div>
+          <div class="daily">
+            <span id="puzzle-no">Connecting…</span
+            ><time id="puzzle-date"></time>
+          </div>
+        </header>
+        <main id="main" tabindex="-1">
+          <section
+            id="screen-intro"
+            class="screen intro"
+            aria-labelledby="intro-heading"
+          >
+            <h2 id="intro-heading">How deep<br />can you go?</h2>
+            <p class="lead">
+              Seven prompts. <span id="question-duration">25</span> seconds
+              each.<br />Any correct answer scores. Deep cuts take you further.
+            </p>
+            <ol class="how">
+              <li><span>01</span> Name an answer. Hit Enter.</li>
+              <li><span>02</span> Earn a startup rank for its rarity.</li>
+              <li><span>03</span> Descend from Browser to Silicon.</li>
+            </ol>
+            <p class="daily-rule">
+              One attempt a day. Same prompts for everyone.
+            </p>
+            <label class="field" for="name"
+              >Display name <span class="optional">(optional)</span></label
+            >
+            <input
+              id="name"
+              type="text"
+              maxlength="16"
+              autocomplete="nickname"
+              spellcheck="false"
+              placeholder="Anonymous founder"
+            />
+            <button id="start" class="primary" type="button" disabled>
+              Loading dive…
+            </button>
+            <p id="intro-error" class="error" role="alert" hidden></p>
+            <button id="retry-meta" class="secondary" type="button" hidden>
+              Reconnect
+            </button>
+            <details class="rank-guide">
+              <summary>The startup ranks</summary>
+              <ol id="rank-list"></ol>
+              <p>Ranks describe your answer’s rarity, not you.</p>
+            </details>
+          </section>
+          <section
+            id="screen-question"
+            class="screen question"
+            aria-labelledby="q-text"
+            hidden
+          >
+            <div class="round-status">
+              <span id="q-count"></span>
+              <ol
+                id="q-progress"
+                class="question-progress"
+                aria-label="Question progress"
+              ></ol>
+            </div>
+            <h2 id="q-text" class="prompt"></h2>
+            <div id="timer" class="timer-group">
+              <span
+                id="q-seconds"
+                class="seconds"
+                role="timer"
+                aria-label="25 seconds remaining"
+                >25<span>s</span></span
+              >
+              <div class="timer-track" aria-hidden="true">
+                <div id="timer-bar"></div>
+              </div>
+              <span id="time-warning" class="time-warning" hidden
+                >Time is low</span
+              >
+            </div>
+            <p id="timer-announcement" class="sr-only" role="status"></p>
+            <form id="answer-form" autocomplete="off">
+              <label class="field" for="answer">Your answer</label
+              ><input
+                id="answer"
+                type="text"
+                maxlength="80"
+                autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                placeholder="Type an answer"
+                  aria-describedby="q-text answer-help q-error"
+              />
+              <div class="answer-actions">
+                <button id="submit" class="primary" type="submit">Submit</button
+                ><span id="answer-help" class="key-hint"
+                  ><kbd>Enter</kbd> to submit</span
+                >
+              </div>
+            </form>
+            <p id="q-error" class="error" role="alert" hidden></p>
+            <div class="last-result">
+              <div>
+                <span class="label">Last answer</span
+                ><strong id="last-rank">Your first descent</strong>
+              </div>
+              <span id="last-gain" class="gain">Rarer answers go deeper.</span>
+              <div>
+                <span class="label">Total</span
+                ><strong id="q-score">0 pts</strong>
+              </div>
+              <div class="rarity-summary">
+                <span class="label">Rarity</span
+                ><span
+                  id="last-rarity"
+                  class="rarity-marks"
+                  role="img"
+                  aria-label="No answer yet"
+                ></span>
+              </div>
+            </div>
+          </section>
+          <section
+            id="screen-reveal"
+            class="screen reveal"
+            aria-labelledby="reveal-rank"
+            hidden
+          >
+            <div class="round-status">
+              <span id="reveal-count"></span><span id="reveal-status"></span>
+            </div>
+            <p id="reveal-prompt" class="reveal-context"></p>
+            <p id="reveal-answer" class="answer-line"></p>
+            <img
+              id="reveal-icon"
+              class="reveal-icon"
+              src="/assets/rocket.svg"
+              width="64"
+              height="76"
+              alt=""
+            />
+            <h2 id="reveal-rank" class="rank-title"></h2>
+            <p id="reveal-description" class="rarity-description"></p>
+            <div id="reveal-rarity" class="rarity-marks" role="img"></div>
+            <p id="reveal-points" class="points"></p>
+            <p id="reveal-flavor" class="flavor"></p>
+            <p id="reveal-total" class="reveal-total"></p>
+            <div class="reveal-details">
+              <p id="reveal-fact"></p>
+              <p id="reveal-rarest"></p>
+            </div>
+            <button id="next" class="primary" type="button">
+              Next question
+            </button>
+            <p id="next-note" class="next-note">
+              Take a breath. The next timer starts when you do.
+            </p>
+            <p id="next-error" class="error" role="alert" hidden></p>
+          </section>
+          <section
+            id="screen-results"
+            class="screen results"
+            aria-labelledby="results-heading"
+            hidden
+          >
+            <h2 id="results-heading">Dive complete.</h2>
+            <p id="res-depth" class="big"></p>
+            <p id="res-score" class="results-score"></p>
+            <ol
+              id="res-row"
+              class="result-row"
+              aria-label="Your answer ranks"
+            ></ol>
+            <p id="res-rank" class="muted"></p>
+            <div class="actions">
+              <button id="copy" class="primary" type="button">
+                Copy result</button
+              ><span id="copy-status" class="muted" role="status"></span>
+            </div>
+            <label id="share-label" class="field" for="share-text" hidden
+              >Copy your result below</label
+            ><textarea id="share-text" readonly hidden></textarea>
+            <h3>Today’s leaderboard</h3>
+            <ol id="board" class="board"></ol>
+            <p class="return-note">That’s today’s dive. See you tomorrow.</p>
+          </section>
+          <noscript
+            ><p class="error">
+              Downstack needs JavaScript to run the timer and submit answers.
+              Enable it, then reload.
+            </p></noscript
+          >
+        </main>
+        <footer>
+          Seven prompts. One descent.<span>Downstack / est. 2026</span>
+        </footer>
       </div>
-      <div class="timer" aria-hidden="true"><div id="timer-bar"></div></div>
-      <p id="q-seconds" class="sr-only" aria-live="off"></p>
-      <h2 id="q-text" class="prompt"></h2>
-      <form id="answer-form" autocomplete="off">
-        <input id="answer" type="text" maxlength="80" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Your answer" placeholder="Type your answer">
-        <button class="primary" type="submit">Submit</button>
-      </form>
-      <p id="q-error" class="error" role="alert" hidden></p>
-      <ol id="layers" class="layers" aria-label="Depth through the stack"></ol>
-    </section>
-
-    <!-- Reveal -->
-    <section id="screen-reveal" class="screen" hidden aria-live="polite">
-      <div id="reveal-badge" class="badge"></div>
-      <p id="reveal-points" class="points"></p>
-      <p id="reveal-answer" class="answer-line"></p>
-      <p id="reveal-fact" class="muted"></p>
-      <p id="reveal-rarest" class="muted"></p>
-      <button id="next" class="primary" type="button">Next</button>
-    </section>
-
-    <!-- Results -->
-    <section id="screen-results" class="screen" hidden>
-      <h2>Dive complete</h2>
-      <p id="res-depth" class="big"></p>
-      <p id="res-score" class="muted"></p>
-      <p id="res-row" class="row" aria-label="Your results"></p>
-      <p id="res-rank" class="muted"></p>
-      <div class="actions">
-        <button id="copy" class="primary" type="button">Copy result</button>
-        <span id="copy-status" class="muted" role="status"></span>
-      </div>
-      <h3>Today's leaderboard</h3>
-      <ol id="board" class="board"></ol>
-      <p class="muted">Come back tomorrow for a new dive.</p>
-    </section>
-  </main>
-
-  <footer class="muted">DevDive is an independent game inspired by the rare-answer trivia format.</footer>
-  <script src="/app.js"></script>
-</body>
+    </div>
+    <script src="/ui.js"></script>
+    <script src="/app.js"></script>
+  </body>
 </html>
