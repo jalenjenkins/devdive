@@ -1,0 +1,188 @@
+{
+  "version": 1,
+  "prompts": [
+    {
+      "id": "git-subcommands",
+      "text": "Name a Git subcommand",
+      "category": "git",
+      "fact": "Plumbing commands like hash-object and cat-file are what the everyday commands are built on.",
+      "tiers": {
+        "1": ["commit", "push", "pull", "add", "status", "clone", "checkout", "branch", "merge", "log", "init", "diff"],
+        "2": ["fetch", "rebase", "reset", "stash", "remote", "tag", "revert", "rm", "mv", "show"],
+        "3": ["cherry-pick|cherrypick", "bisect", "blame", "reflog", "restore", "switch", "clean", "config", "grep", "describe", "apply"],
+        "4": ["worktree", "submodule", "shortlog", "archive", "bundle", "format-patch", "am", "notes", "gc", "fsck", "ls-files", "rev-parse"],
+        "5": ["filter-branch", "range-diff", "sparse-checkout", "rerere", "cherry", "ls-tree", "cat-file", "hash-object", "update-index", "for-each-ref"],
+        "6": ["replace", "fast-import", "interpret-trailers", "stripspace", "mktree", "verify-pack", "request-pull", "instaweb", "pack-refs", "unpack-file"]
+      }
+    },
+    {
+      "id": "unix-utilities",
+      "text": "Name a Unix/Linux command-line utility",
+      "category": "unix",
+      "fact": "The yes command prints a string forever, which is handy for auto-confirming prompts.",
+      "tiers": {
+        "1": ["ls", "cd", "cat", "grep", "rm", "cp", "mv", "mkdir", "pwd", "echo", "sudo", "chmod", "touch"],
+        "2": ["find", "sed", "awk", "ssh", "curl", "wget", "tar", "man", "head", "tail", "ps", "kill", "top", "df", "du", "chown", "sort", "less", "which", "gzip"],
+        "3": ["xargs", "tee", "diff", "cut", "uniq", "wc", "ln", "rsync", "scp", "crontab", "nohup", "alias", "env", "tr", "basename", "dirname", "stat", "file", "date", "uname", "whoami", "history"],
+        "4": ["strace", "lsof", "comm", "paste", "split", "join", "od", "xxd", "tac", "rev", "fold", "nl", "expand", "watch", "time", "timeout", "dd", "mktemp", "realpath", "readlink", "install", "getconf", "ldd", "nm", "strings"],
+        "5": ["fuser", "ionice", "nice", "renice", "flock", "pstree", "fmt", "csplit", "pr", "shuf", "seq", "yes", "factor", "numfmt", "truncate", "shred", "sync", "mkfifo", "stdbuf", "unexpand", "base64", "sha256sum", "md5sum", "cksum"],
+        "6": ["ptx", "tsort", "pinky", "chcon", "runcon", "nproc", "arch", "logname", "users", "dircolors", "pathchk", "unlink", "mknod"]
+      }
+    },
+    {
+      "id": "http-status-codes",
+      "text": "Name an HTTP status code (the number or the name)",
+      "category": "http",
+      "fact": "418 I'm a teapot comes from an April Fools' RFC (RFC 2324) about a coffee pot control protocol.",
+      "tiers": {
+        "1": ["200 OK|200|OK", "404 Not Found|404|Not Found", "500 Internal Server Error|500|Internal Server Error", "301 Moved Permanently|301|Moved Permanently", "403 Forbidden|403|Forbidden", "401 Unauthorized|401|Unauthorized", "302 Found|302|Found"],
+        "2": ["201 Created|201|Created", "204 No Content|204|No Content", "400 Bad Request|400|Bad Request", "304 Not Modified|304|Not Modified", "502 Bad Gateway|502|Bad Gateway", "503 Service Unavailable|503|Service Unavailable", "429 Too Many Requests|429|Too Many Requests", "418 I'm a teapot|418|teapot|im a teapot"],
+        "3": ["307 Temporary Redirect|307|Temporary Redirect", "308 Permanent Redirect|308|Permanent Redirect", "405 Method Not Allowed|405|Method Not Allowed", "409 Conflict|409|Conflict", "410 Gone|410|Gone", "422 Unprocessable Content|422|Unprocessable Content|Unprocessable Entity", "504 Gateway Timeout|504|Gateway Timeout", "202 Accepted|202|Accepted", "206 Partial Content|206|Partial Content", "101 Switching Protocols|101|Switching Protocols", "100 Continue|100|Continue", "402 Payment Required|402|Payment Required"],
+        "4": ["406 Not Acceptable|406|Not Acceptable", "408 Request Timeout|408|Request Timeout", "411 Length Required|411|Length Required", "412 Precondition Failed|412|Precondition Failed", "413 Content Too Large|413|Content Too Large|Payload Too Large", "414 URI Too Long|414|URI Too Long", "415 Unsupported Media Type|415|Unsupported Media Type", "416 Range Not Satisfiable|416|Range Not Satisfiable", "417 Expectation Failed|417|Expectation Failed", "501 Not Implemented|501|Not Implemented", "505 HTTP Version Not Supported|505|HTTP Version Not Supported", "303 See Other|303|See Other", "205 Reset Content|205|Reset Content", "407 Proxy Authentication Required|407|Proxy Authentication Required", "203 Non-Authoritative Information|203|Non-Authoritative Information"],
+        "5": ["102 Processing|102|Processing", "103 Early Hints|103|Early Hints", "207 Multi-Status|207|Multi-Status", "300 Multiple Choices|300|Multiple Choices", "421 Misdirected Request|421|Misdirected Request", "423 Locked|423|Locked", "424 Failed Dependency|424|Failed Dependency", "426 Upgrade Required|426|Upgrade Required", "428 Precondition Required|428|Precondition Required", "431 Request Header Fields Too Large|431|Request Header Fields Too Large", "451 Unavailable For Legal Reasons|451|Unavailable For Legal Reasons"],
+        "6": ["208 Already Reported|208|Already Reported", "226 IM Used|226|IM Used", "305 Use Proxy|305|Use Proxy", "425 Too Early|425|Too Early", "506 Variant Also Negotiates|506|Variant Also Negotiates", "507 Insufficient Storage|507|Insufficient Storage", "508 Loop Detected|508|Loop Detected", "510 Not Extended|510|Not Extended", "511 Network Authentication Required|511|Network Authentication Required"]
+      }
+    },
+    {
+      "id": "js-array-methods",
+      "text": "Name a JavaScript Array method",
+      "category": "javascript",
+      "fact": "toSorted, toReversed, toSpliced and with are non-mutating versions added in ES2023.",
+      "tiers": {
+        "1": ["map", "filter", "push", "pop", "forEach", "reduce", "slice", "splice", "join", "sort", "find", "includes", "indexOf"],
+        "2": ["concat", "shift", "unshift", "some", "every", "reverse", "flat", "flatMap", "findIndex", "fill", "from", "isArray"],
+        "3": ["lastIndexOf", "entries", "values", "keys", "at", "of"],
+        "4": ["reduceRight", "copyWithin", "findLast", "findLastIndex", "toSorted", "toReversed", "toSpliced", "with", "toString", "toLocaleString"],
+        "5": ["fromAsync"],
+        "6": ["Symbol.iterator|@@iterator"]
+      }
+    },
+    {
+      "id": "python-stdlib",
+      "text": "Name a Python standard library module",
+      "category": "python",
+      "fact": "Running import this prints the Zen of Python.",
+      "tiers": {
+        "1": ["os", "sys", "re", "json", "math", "random", "time", "datetime"],
+        "2": ["collections", "itertools", "functools", "pathlib", "subprocess", "logging", "argparse", "typing", "csv", "unittest", "threading", "sqlite3", "string", "copy", "io"],
+        "3": ["asyncio", "dataclasses", "enum", "shutil", "glob", "pickle", "hashlib", "urllib", "http", "socket", "tempfile", "contextlib", "abc", "heapq", "bisect", "decimal", "fractions", "statistics", "struct", "zipfile", "platform", "traceback", "textwrap"],
+        "4": ["queue", "multiprocessing", "concurrent|concurrent.futures", "secrets", "uuid", "base64", "configparser", "inspect", "operator", "weakref", "gc", "signal", "select", "selectors", "ssl", "email", "html", "xml", "tomllib", "zoneinfo", "warnings", "pprint", "getpass", "codecs", "locale", "gettext", "this"],
+        "5": ["sched", "mmap", "ctypes", "fcntl", "termios", "tty", "pty", "curses", "readline", "cmd", "shlex", "difflib", "filecmp", "fnmatch", "linecache", "tokenize", "ast", "dis", "symtable", "trace", "tracemalloc", "cProfile", "pstats", "timeit", "pdb", "zipimport", "pkgutil", "importlib", "runpy", "code", "codeop", "antigravity", "__future__|future", "__main__"],
+        "6": ["pickletools", "graphlib", "modulefinder", "tabnanny", "quopri", "stringprep", "pyclbr", "py_compile", "compileall", "zipapp", "faulthandler", "rlcompleter", "reprlib", "colorsys", "wave"]
+      }
+    },
+    {
+      "id": "sql-keywords",
+      "text": "Name a SQL keyword or clause",
+      "category": "sql",
+      "fact": "SQL keywords are case-insensitive; uppercase is just a convention.",
+      "tiers": {
+        "1": ["SELECT", "FROM", "WHERE", "INSERT", "UPDATE", "DELETE", "JOIN", "GROUP BY", "ORDER BY", "CREATE", "TABLE"],
+        "2": ["INNER JOIN", "LEFT JOIN|LEFT OUTER JOIN", "HAVING", "LIMIT", "DISTINCT", "UNION", "AS", "AND", "OR", "NOT", "NULL", "LIKE", "IN", "DROP", "ALTER", "INDEX", "VALUES", "INTO", "SET", "ON", "ASC", "DESC"],
+        "3": ["RIGHT JOIN|RIGHT OUTER JOIN", "FULL JOIN|FULL OUTER JOIN", "CROSS JOIN", "BETWEEN", "EXISTS", "CASE", "WHEN", "THEN", "ELSE", "END", "PRIMARY KEY", "FOREIGN KEY", "UNIQUE", "DEFAULT", "CHECK", "OFFSET", "ANY", "ALL", "TRUNCATE", "VIEW", "CONSTRAINT"],
+        "4": ["WITH", "OVER", "PARTITION BY", "WINDOW", "RECURSIVE", "INTERSECT", "EXCEPT", "LATERAL", "MERGE", "RETURNING", "ROLLBACK", "COMMIT", "BEGIN", "SAVEPOINT", "GRANT", "REVOKE", "TRIGGER", "PROCEDURE", "CASCADE"],
+        "5": ["ROLLUP", "CUBE", "GROUPING SETS", "FETCH", "TABLESAMPLE", "NATURAL JOIN", "USING", "ESCAPE", "COLLATE", "SIMILAR TO", "SOME", "FILTER", "WITHIN GROUP", "EXCLUDE"],
+        "6": ["OVERLAPS", "MATCH", "DEFERRABLE", "SYMMETRIC", "MULTISET", "CORRESPONDING", "TREAT", "UNKNOWN"]
+      }
+    },
+    {
+      "id": "linux-signals",
+      "text": "Name a Linux signal",
+      "category": "linux",
+      "fact": "SIGKILL and SIGSTOP are the two signals a process can neither catch nor ignore.",
+      "tiers": {
+        "1": ["SIGKILL|KILL", "SIGTERM|TERM", "SIGINT|INT", "SIGSEGV|SEGV", "SIGHUP|HUP"],
+        "2": ["SIGSTOP|STOP", "SIGCONT|CONT", "SIGUSR1|USR1", "SIGUSR2|USR2", "SIGPIPE|PIPE", "SIGALRM|ALRM", "SIGCHLD|CHLD", "SIGQUIT|QUIT", "SIGABRT|ABRT"],
+        "3": ["SIGTSTP|TSTP", "SIGBUS|BUS", "SIGFPE|FPE", "SIGILL|ILL", "SIGTRAP|TRAP", "SIGWINCH|WINCH", "SIGTTIN|TTIN", "SIGTTOU|TTOU"],
+        "4": ["SIGURG|URG", "SIGXCPU|XCPU", "SIGXFSZ|XFSZ", "SIGVTALRM|VTALRM", "SIGPROF|PROF", "SIGIO|IO", "SIGPOLL|POLL"],
+        "5": ["SIGSYS|SYS", "SIGCLD|CLD", "SIGRTMIN|RTMIN", "SIGRTMAX|RTMAX"],
+        "6": ["SIGPWR|PWR", "SIGSTKFLT|STKFLT"]
+      }
+    },
+    {
+      "id": "docker-commands",
+      "text": "Name a docker CLI subcommand",
+      "category": "docker",
+      "fact": "docker init scaffolds a Dockerfile and compose file for your project.",
+      "tiers": {
+        "1": ["run", "build", "ps", "images", "pull", "push", "exec", "stop", "start", "rm", "logs"],
+        "2": ["compose", "rmi", "restart", "inspect", "network", "volume", "login", "tag", "cp", "kill"],
+        "3": ["system", "stats", "top", "commit", "save", "load", "export", "import", "history", "diff", "attach", "port", "rename"],
+        "4": ["pause", "unpause", "wait", "events", "info", "version", "logout", "search", "update", "create", "context", "buildx", "manifest", "container", "image"],
+        "5": ["swarm", "service", "stack", "node", "secret", "config", "plugin", "trust", "checkpoint", "builder"],
+        "6": ["scout", "init", "sbom", "debug"]
+      }
+    },
+    {
+      "id": "programming-languages",
+      "text": "Name a programming language",
+      "category": "languages",
+      "fact": "Fortran dates to 1957 and is still used in scientific computing.",
+      "tiers": {
+        "1": ["Python", "JavaScript|js", "Java", "C", "C++|cpp", "C#|csharp|c sharp", "Go|golang", "Rust", "PHP", "Ruby", "TypeScript|ts", "Swift", "Kotlin"],
+        "2": ["Perl", "Lua", "R", "Scala", "Haskell", "Dart", "Bash", "MATLAB", "Objective-C|objc|objective c", "Assembly|asm", "Lisp", "Julia", "Elixir", "Erlang", "Clojure", "Visual Basic|vb|vb.net", "Fortran", "COBOL"],
+        "3": ["OCaml", "F#|fsharp", "Groovy", "Pascal", "Delphi", "Prolog", "Scheme", "Racket", "Smalltalk", "Zig", "Nim", "Crystal", "Elm", "Ada", "Forth", "Tcl", "AWK", "Hack", "Solidity", "Verilog", "VHDL"],
+        "4": ["APL", "D", "Eiffel", "Idris", "Agda", "Coq", "Lean", "Raku", "Odin", "V", "Gleam", "ReScript", "PureScript", "Mercury", "Oz", "Io", "Self", "Icon", "SNOBOL", "Simula", "ALGOL", "BCPL", "PL/I", "Modula-2", "Oberon"],
+        "5": ["Brainfuck", "Pony", "Vala", "Wren", "Janet", "Factor", "Joy", "Rebol", "Red"],
+        "6": ["Malbolge", "Whitespace", "Piet", "LOLCODE", "INTERCAL", "Befunge", "Chef"]
+      }
+    },
+    {
+      "id": "gof-patterns",
+      "text": "Name a Gang of Four design pattern",
+      "category": "design",
+      "fact": "The 23 patterns come from the 1994 book Design Patterns.",
+      "tiers": {
+        "1": ["Singleton", "Factory Method|factory", "Observer", "Strategy"],
+        "2": ["Decorator", "Adapter", "Builder", "Abstract Factory", "Facade", "Proxy", "Command"],
+        "3": ["Iterator", "Template Method", "Composite", "State", "Prototype"],
+        "4": ["Bridge", "Chain of Responsibility", "Mediator", "Memento"],
+        "5": ["Flyweight", "Visitor"],
+        "6": ["Interpreter"]
+      }
+    },
+    {
+      "id": "sorting-algorithms",
+      "text": "Name a sorting algorithm",
+      "category": "algorithms",
+      "fact": "Python and Java both use Timsort to sort objects.",
+      "dropSuffix": "sort",
+      "tiers": {
+        "1": ["Bubble Sort", "Quick Sort", "Merge Sort", "Insertion Sort", "Selection Sort", "Heap Sort"],
+        "2": ["Counting Sort", "Radix Sort", "Bucket Sort", "Shell Sort", "Tim Sort", "Bogo Sort|permutation sort|stupid sort"],
+        "3": ["Intro Sort", "Cocktail Shaker Sort|cocktail sort", "Gnome Sort", "Comb Sort", "Cycle Sort", "Tree Sort", "Pancake Sort", "Stooge Sort", "Odd-Even Sort|brick sort"],
+        "4": ["Smooth Sort", "Block Sort", "Patience Sort", "Strand Sort", "Bitonic Sort", "Library Sort", "Tournament Sort", "Sleep Sort", "Slow Sort"],
+        "5": ["Spread Sort", "Burst Sort", "Flash Sort", "American Flag Sort", "Pigeonhole Sort", "Cube Sort", "Pdq Sort|pattern-defeating quicksort", "Dual-Pivot Quick Sort", "Sample Sort"],
+        "6": ["Bead Sort|gravity sort", "Proxmap Sort", "Ford-Johnson Algorithm|Merge-insertion Sort|Ford Johnson", "Weak Heap Sort", "Spaghetti Sort"]
+      }
+    },
+    {
+      "id": "http-headers",
+      "text": "Name an HTTP header",
+      "category": "http-headers",
+      "fact": "The Referer header's misspelling is in the original spec and was never fixed.",
+      "tiers": {
+        "1": ["Content-Type", "Authorization", "User-Agent", "Accept", "Cookie", "Host", "Content-Length", "Set-Cookie", "Location", "Cache-Control"],
+        "2": ["Referer|Referrer", "Origin", "ETag", "If-None-Match", "Accept-Encoding", "Content-Encoding", "Connection", "Accept-Language", "Last-Modified", "Expires", "Access-Control-Allow-Origin", "X-Forwarded-For"],
+        "3": ["Content-Disposition", "Retry-After", "Vary", "Allow", "Server", "Date", "Range", "If-Modified-Since", "Upgrade", "Via", "WWW-Authenticate", "Strict-Transport-Security", "Content-Security-Policy", "X-Frame-Options", "X-Content-Type-Options", "Transfer-Encoding", "Pragma", "Age", "X-Powered-By"],
+        "4": ["Accept-Ranges", "Content-Range", "Content-Language", "Content-Location", "Expect", "From", "If-Match", "If-Range", "If-Unmodified-Since", "Max-Forwards", "Proxy-Authorization", "Proxy-Authenticate", "TE", "Trailer", "Warning", "Link", "Forwarded", "Sec-Fetch-Site", "DNT", "Referrer-Policy", "Permissions-Policy", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers", "Access-Control-Max-Age", "Access-Control-Request-Method"],
+        "5": ["Sec-Fetch-Mode", "Sec-Fetch-Dest", "Sec-Fetch-User", "Sec-CH-UA", "Cross-Origin-Opener-Policy", "Cross-Origin-Embedder-Policy", "Cross-Origin-Resource-Policy", "Timing-Allow-Origin", "Alt-Svc", "Save-Data", "Content-Security-Policy-Report-Only", "Upgrade-Insecure-Requests", "Clear-Site-Data", "Server-Timing", "NEL", "Report-To", "Priority", "Accept-CH"],
+        "6": ["Sec-WebSocket-Key", "Sec-WebSocket-Accept", "Sec-WebSocket-Protocol", "Sec-WebSocket-Version", "Sec-WebSocket-Extensions", "Sec-GPC", "Origin-Agent-Cluster", "Repr-Digest", "Content-Digest"]
+      }
+    },
+    {
+      "id": "node-builtins",
+      "text": "Name a Node.js built-in module",
+      "category": "node",
+      "fact": "Newer built-ins such as node:test and node:sqlite only load with the node: prefix.",
+      "tiers": {
+        "1": ["fs", "path", "http", "os", "crypto", "events", "util", "stream"],
+        "2": ["child_process", "url", "https", "buffer", "readline", "assert", "zlib", "net", "cluster", "process"],
+        "3": ["worker_threads", "timers", "dns", "querystring", "string_decoder", "perf_hooks", "async_hooks", "tls", "dgram", "vm", "module", "fs/promises", "test"],
+        "4": ["http2", "v8", "repl", "tty", "inspector", "diagnostics_channel", "trace_events", "wasi", "punycode", "readline/promises", "stream/promises", "timers/promises", "dns/promises"],
+        "5": ["sqlite", "domain", "constants", "sys", "path/posix"],
+        "6": ["stream/consumers", "util/types", "path/win32", "assert/strict", "test/reporters", "stream/web"]
+      }
+    }
+  ]
+}

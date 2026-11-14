@@ -1,0 +1,17 @@
+{
+  "name": "devdive",
+  "version": "1.0.0",
+  "description": "A daily rare-answer trivia game for developers. Dive through the stack, one obscure answer at a time.",
+  "license": "MIT",
+  "private": true,
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test",
+    "refill": "node scripts/refill-queue.js",
+    "backfill": "node scripts/refill-queue.js --backfill",
+    "retier": "node scripts/retier.js",
+    "preview": "node scripts/preview.js"
+  }
+}

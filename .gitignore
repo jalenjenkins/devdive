@@ -1,0 +1,16 @@
+node_modules/
+.env
+# Runtime data, generated on first run
+data/bank.json
+data/schedule.json
+data/results.json
+data/meta.json
+data/answers-log.jsonl
+data/unmatched-report.json
+data/*.tmp
+
+.DS_Store
+node_modules/
+.env
+.env.*
+!.env.example

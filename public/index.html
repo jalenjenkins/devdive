@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DevDive: a daily rare-answer game for developers</title>
+  <meta name="description" content="Seven developer trivia prompts a day. The rarer your correct answer, the deeper you dive through the stack.">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Dev<span>Dive</span></h1>
+    <p id="puzzle-no" class="muted"></p>
+  </header>
+
+  <main>
+    <!-- Intro -->
+    <section id="screen-intro" class="screen">
+      <p class="lead">Seven prompts. About 25 seconds each. <strong>Any correct answer scores, but the rarer it is, the deeper you dive</strong> through the stack, from Browser down to Silicon.</p>
+      <ul class="how">
+        <li>Type an answer and press Enter.</li>
+        <li>Obvious answers are worth little. Deep cuts are worth a lot.</li>
+        <li>One attempt per day. Same prompts for everyone.</li>
+      </ul>
+      <label class="field">
+        <span>Display name (optional)</span>
+        <input id="name" type="text" maxlength="16" autocomplete="nickname" spellcheck="false">
+      </label>
+      <button id="start" class="primary" type="button">Start today's dive</button>
+      <p id="intro-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <!-- Question -->
+    <section id="screen-question" class="screen" hidden>
+      <div class="status">
+        <span id="q-count" class="muted"></span>
+        <span id="q-layer" class="layer-name"></span>
+        <span id="q-score" class="muted"></span>
+      </div>
+      <div class="timer" aria-hidden="true"><div id="timer-bar"></div></div>
+      <p id="q-seconds" class="sr-only" aria-live="off"></p>
+      <h2 id="q-text" class="prompt"></h2>
+      <form id="answer-form" autocomplete="off">
+        <input id="answer" type="text" maxlength="80" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Your answer" placeholder="Type your answer">
+        <button class="primary" type="submit">Submit</button>
+      </form>
+      <p id="q-error" class="error" role="alert" hidden></p>
+      <ol id="layers" class="layers" aria-label="Depth through the stack"></ol>
+    </section>
+
+    <!-- Reveal -->
+    <section id="screen-reveal" class="screen" hidden aria-live="polite">
+      <div id="reveal-badge" class="badge"></div>
+      <p id="reveal-points" class="points"></p>
+      <p id="reveal-answer" class="answer-line"></p>
+      <p id="reveal-fact" class="muted"></p>
+      <p id="reveal-rarest" class="muted"></p>
+      <button id="next" class="primary" type="button">Next</button>
+    </section>
+
+    <!-- Results -->
+    <section id="screen-results" class="screen" hidden>
+      <h2>Dive complete</h2>
+      <p id="res-depth" class="big"></p>
+      <p id="res-score" class="muted"></p>
+      <p id="res-row" class="row" aria-label="Your results"></p>
+      <p id="res-rank" class="muted"></p>
+      <div class="actions">
+        <button id="copy" class="primary" type="button">Copy result</button>
+        <span id="copy-status" class="muted" role="status"></span>
+      </div>
+      <h3>Today's leaderboard</h3>
+      <ol id="board" class="board"></ol>
+      <p class="muted">Come back tomorrow for a new dive.</p>
+    </section>
+  </main>
+
+  <footer class="muted">DevDive is an independent game inspired by the rare-answer trivia format.</footer>
+  <script src="/app.js"></script>
+</body>
+</html>
