@@ -1,17 +1,33 @@
 {
   "name": "downstack",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "A daily rare-answer trivia game for developers. Startup ranks. Pixel art. One daily descent through the stack.",
   "license": "MIT",
   "private": true,
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test",
-    "refill": "node scripts/refill-queue.js",
-    "backfill": "node scripts/refill-queue.js --backfill",
-    "retier": "node scripts/retier.js",
-    "preview": "node scripts/preview.js"
+    "refill": "node scripts/refresh-content.js",
+    "backfill": "node scripts/refresh-content.js",
+    "preview": "node scripts/preview.js",
+    "content:refresh": "node scripts/refresh-content.js",
+    "content:check": "node -e \"const c=require('./lib/catalog').loadCatalog();console.log(c.version,c.prompts.length,'validated prompts')\"",
+    "db:migrate": "node scripts/migrate.js",
+    "maintenance": "node scripts/maintenance.js",
+    "legacy:refill": "node scripts/refill-queue.js",
+    "legacy:retier": "node scripts/retier.js",
+    "test:browser": "node scripts/browser-check.js",
+    "test:load": "node scripts/load-smoke.js"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@mdn/browser-compat-data": "8.1.9",
+    "playwright": "1.65.1"
   }
 }

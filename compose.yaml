@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: downstack
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-development-only}
+      POSTGRES_DB: downstack
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U downstack -d downstack"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://downstack:${POSTGRES_PASSWORD:-local-development-only}@db:5432/downstack
+      NODE_ENV: development
+      TIMEZONE: America/New_York
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  postgres-data:

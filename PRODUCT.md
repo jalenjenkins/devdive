@@ -14,5 +14,9 @@ Developers playing a short daily challenge on desktop keyboards or phones. First
 - Six startup-themed answer ranks: Vibecoder, Indie Hacker, Bootstrapped, Breakout, Unicorn, Founder Lore. Titles describe answers, not players. Existing point values, depths, layers, and matching rules are retained.
 - Keep question count and depth separate. Seven progress squares are questions; six rarity squares describe the answer tier.
 - Pixel UI in charcoal, warm white, and vermilion. Purple, yellow, and green were explicitly rejected. Prompt typography uses the same pixel family as game labels.
-- Retain legacy devdive localStorage keys so the rename does not reset existing daily identities.
+- Use a server-issued HttpOnly guest session cookie for daily identity. Client-supplied IDs do not authorize rounds. The legacy display-name preference remains local; v1 identities require a deliberate migration before any existing production cutover.
 - No accounts, purchases, lives, currency, or continuous-play loop. Return tomorrow for another descent.
+
+## Production foundation
+
+The served bank contains 72 source-backed prompts and 4,464 accepted-answer entries across nine categories. Runtime play requires no model calls or scraping. PostgreSQL stores sessions, frozen daily snapshots, rounds, idempotent submissions, reports, and indexed results across instances. SQLite is a durable single-instance fallback. Guest play is casual fair play; cookie deletion still creates a new identity. Reference updates are proposed for review, not silently published.

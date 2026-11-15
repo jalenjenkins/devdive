@@ -1,109 +1,143 @@
-# Downstack (formerly DevDive)
+# Downstack
 
-A daily pixel-arcade rare-answer trivia game for developers. Seven prompts a day, 25 seconds each. Any correct answer scores, but the rarer it is, the more points you earn and the deeper you dive through the stack: Browser, Framework, Runtime, Operating System, Kernel, Firmware, Silicon.
+A deployable daily developer trivia game: seven open-answer prompts, 25 seconds per prompt, six startup ranks, and a descent through seven computing layers. Pixel typography, charcoal/warm-white/vermilion UI, desktop and mobile support.
 
-Zero runtime dependencies. Needs Node 20 or newer.
+**No paid AI service is required.** The production catalog contains **72 source-backed prompts and 4,464 accepted-answer entries across nine categories**. Content is imported from reference datasets and runtimes, reviewed in Git, and frozen per daily puzzle.
 
-```
-npm start            # http://localhost:3000
-npm test             # tests run locally, no network needed
-```
+## Run locally
 
-## Pixel arcade redesign
+Requires **Node 24+**.
 
-The UI uses charcoal, warm white, and vermilion, a persistent computer-depth shaft, and self-hosted Press Start 2P for the prompt and game labels. Answer ranks are **Vibecoder → Indie Hacker → Bootstrapped → Breakout → Unicorn → Founder Lore**; point values, meter rewards, thresholds, and matching are unchanged. On phones, current depth stays visible and the full vertical map is available under **Explore the stack**. Local fonts and art work under the existing self-only CSP; there are no runtime dependencies or external font requests.
-
-The reveal is untimed. After answering, `POST /api/answer` returns the next question's index and total, **not its prompt**. `POST /api/next` with `{roundToken, index}` atomically discloses that prompt and starts its server timer. Retrying Next does not reset the clock. `POST /api/start` resumes an active or paused round. This replaces the previous response shape that exposed the next prompt and began its timer during reveal; API clients must activate Next before answering. Existing `devdive.pid` and `devdive.name` localStorage keys are retained.
-
-See `DESIGN.md` for the implemented visual system, `PRODUCT.md` for product constraints, and `public/assets/SOURCES.md` for asset provenance. The clipboard fallback exposes selectable text if browser clipboard access is unavailable.
-
-## How it works
-
-| Piece | File | What it does |
-|---|---|---|
-| Answer bank | `data/seed.json` | 13 hand-written prompts, about 35 to 60 answers each, tiered 1 (obvious) to 6 (deep cut). Compact format: `"canonical\|alias\|alias"`. |
-| Matcher | `lib/matcher.js` | Normalizes input (case, spaces, hyphens, leading `git `/`node:`), exact match on canonical or alias, then one typo allowed on inputs of 5+ characters. Ambiguous typos score nothing. |
-| Scoring | `lib/scoring.js` | Six tiers worth 10/20/35/55/75/100 points and 50/100/200/400/700/1200 meters. Depth maps to a stack layer. |
-| Daily set | `lib/daily.js` | Same 7 prompts for everyone, chosen by a seeded shuffle of the date, one per category when possible, unseen prompts before repeats. Persisted on first use. |
-| Game rules | `lib/game.js` | Server-side timer (25 s plus 1.5 s grace), one attempt per day, resume support, leaderboard, share string. |
-| API + static files | `lib/server.js` | Plain `node:http`. Rate limited, body size capped, strict CSP. |
-| Front end | `public/` | Vanilla JS, no build step. Keyboard-first, light and dark themes, reduced-motion friendly. |
-| Daily automation | `lib/refill.js` | Generates, verifies and schedules new prompts. See below. |
-| Feedback loop | `lib/retier.js` | Re-tiers answers from real player frequency and reports frequent unmatched inputs. |
-
-The answer bank never leaves the server until a question has been answered. The timer is enforced on the server, so editing the page does not help.
-
-## Daily automation
-
-The refill pipeline keeps new content flowing without you writing it:
-
-1. Pick a topic (curated list in `lib/topics.js`, then model-proposed topics once that runs out).
-2. Ask the model for 40 to 60 answers with aliases, a 1 to 10 difficulty and an evidence note.
-3. Verify. Where a ground-truth list can be built locally (`git help -a`, Node's built-in module list, Linux signal names, Python's stdlib list) answers not on it are dropped. Everything left goes through a second, strict model pass.
-4. Strip colliding aliases, convert difficulty to tiers, and apply quality gates (at least 25 verified answers, at least 4 tiers represented, at least 2 hard answers).
-5. Save as `ready` and schedule as many whole days ahead as there are unseen prompts for.
-
-```
-export ANTHROPIC_API_KEY=...
-npm run backfill       # one-time: fill a 14-day buffer (about 98 prompts)
-npm run refill         # daily: top up (7 new prompts)
-npm run preview        # print tomorrow's set with answer counts and rarest answers
-npm run retier         # blend tiers with real player frequency
+```sh
+npm ci
+npm start
+# http://localhost:3000
 ```
 
-Set `AUTO_REFILL=1` and the server runs the refill and re-tier itself, at most once every 22 hours. That needs a persistent data directory (a volume), because the bank, schedule and results are JSON files in `DATA_DIR`.
+Without `DATABASE_URL`, Downstack creates `data/downstack.sqlite` in WAL mode. Rounds, results, reports, and published puzzles survive restarts. Keep this directory on persistent storage. SQLite is for local development or one app instance.
 
-**Cost control.** `MAX_API_CALLS_PER_RUN` (default 40) is a hard cap, and every run prints an estimated spend. The built-in price table (`$2/$10` per million tokens for the generator, `$1/$5` for the verifier) is an approximation; override it with `PRICE_GENERATE_IN`, `PRICE_GENERATE_OUT`, `PRICE_VERIFY_IN`, `PRICE_VERIFY_OUT` and check Anthropic's pricing page. Models default to `claude-sonnet-5-5` (generate) and `claude-haiku-4-5` (verify); change them with `GENERATE_MODEL` and `VERIFY_MODEL`.
+## Deploy with PostgreSQL
 
-**Review window.** New prompts go live as scheduled, but you can veto any before its date:
+Set `DATABASE_URL` to a PostgreSQL connection string and run the same app. Migrations execute transactionally at startup; concurrent PostgreSQL instances coordinate migrations with an advisory lock. The web service needs no persistent disk in this configuration.
 
-```
-ADMIN_TOKEN=pick-a-long-random-string
-curl -H "x-admin-token: $ADMIN_TOKEN" "http://localhost:3000/api/admin/preview?date=2026-11-16"
-curl -X POST -H "x-admin-token: $ADMIN_TOKEN" -H "content-type: application/json" \
-     -d '{"id":"css-name-a-css-property-2026-11-15"}' http://localhost:3000/api/admin/reject
+```sh
+DATABASE_URL='postgresql://user:password@host:5432/downstack?sslmode=verify-full' \
+NODE_ENV=production npm start
 ```
 
-A rejected prompt is replaced automatically in any day that already contained it. Admin routes return 404 unless `ADMIN_TOKEN` is set.
+Use your database provider's certificate-verified connection settings. This app does not turn off certificate verification. A provider may require its root certificate or a pooled connection URL.
+
+### Render / a free-tier web host
+
+1. Create an external PostgreSQL database (a free tier is sufficient for an initial launch, subject to provider quotas).
+2. Connect this GitHub repository to Render as a **Blueprint**. `render.yaml` describes the Docker web service and readiness endpoint.
+3. Enter `DATABASE_URL` when prompted. There is no database provisioned or billed by this blueprint.
+4. Deploy and use the generated HTTPS URL. Set `PUBLIC_ORIGIN` to that exact origin if your proxy changes the host header. Set `TRUST_PROXY_HOPS` to the number of trusted proxies guaranteed by your host; the Render blueprint uses one hop.
+5. Check `/api/ready`. It must return `ok: true` and `storage: postgres`.
+
+Any Docker/Node host with HTTPS and PostgreSQL also works. Free hosts can sleep or enforce quotas; an external database preserves progress, but cannot remove a host's cold-start delay. Hosting accounts, database credentials, and a domain must be supplied by the owner; this repository does not create them automatically.
+
+### Full local deployment with Docker Compose
+
+```sh
+docker compose up --build
+# http://localhost:3000
+```
+
+Compose starts the app and a healthy PostgreSQL 17 database, with a named persistent database volume. Its default password and HTTP/development settings are **local only**. For production use a unique password, HTTPS, `NODE_ENV=production`, the correct origin, and host-managed database backups. The app container runs as a non-root user. For a single-instance production SQLite deployment, mount a persistent `/data` volume and explicitly set `ALLOW_SQLITE_IN_PRODUCTION=1`. Production otherwise refuses to start without `DATABASE_URL`, protecting free-host deployments from silently falling back to ephemeral files.
+
+## How it scales
+
+- **Stateless web instances:** guest identity is an opaque, server-issued HttpOnly cookie. Only its SHA-256 hash is stored. Round tokens are independently random and ownership is checked on every operation.
+- **Durable rounds:** deadlines, answers, score, and reveal state live in SQL, not a process Map. Deploys and server restarts preserve a dive.
+- **Transactional scoring:** row locks serialize concurrent mutations. A player/date uniqueness constraint prevents duplicate daily rounds and results. Duplicate answer requests return the original saved response; a different answer cannot replace it.
+- **Frozen daily content:** the first successful daily snapshot wins atomically. Catalog updates never change a live day's accepted answers or tiers. Instances rolling across versions read the same snapshot.
+- **Indexed leaderboard:** top-N queries use a date/score/depth/time index. Global rank/count still grows with the number of completions for that day; cache aggregate counts if that becomes a measured bottleneck.
+- **Bounded caches:** only 32 immutable daily snapshots are cached per process. Fuzzy matching uses a linear one-edit check, not a quadratic matrix per candidate.
+- **Shared abuse limits:** minute buckets live in SQL, so adding replicas does not reset them. Raw IP addresses are not stored in those buckets.
+- **No runtime scraping or AI:** all accepted answers are deployed with the app. Import jobs do not compete with gameplay.
+
+Start with one web instance and managed PostgreSQL. Add instances only when monitoring justifies it. Keep `DB_POOL_SIZE × instance count` below your provider's connection allowance; pooled database endpoints are useful on small plans. No sticky sessions or Redis are required. The local load smoke test is not a hosting-capacity guarantee.
+
+## Renewable questions and accepted answers
+
+See [data/SOURCES.md](data/SOURCES.md) for provenance, source versions, licenses, filters, and review policy.
+
+```sh
+npm run content:check        # offline validation of the shipped bank
+npm run content:refresh      # Linux + Node 24 + Python 3.12 + Git; fetch IANA registries
+npm run preview             # proposed next daily set; does not publish it
+npm run preview -- 2026-12-01 --answers  # owner-only CLI inspection
+```
+
+MDN is a pinned development dependency. Upgrade it deliberately before a refresh if desired:
+
+```sh
+npm install --save-dev --save-exact @mdn/browser-compat-data@latest
+npm run content:refresh
+npm test
+```
+
+The weekly GitHub Actions refresh workflow proposes a pull request with updated sources and catalog. Review and merge it before deploying. Enable GitHub Actions' permission to create pull requests if your repository settings currently disallow it. Source facts are not copied from other trivia games. A refresh can add, remove, or correct identifiers; it does not promise endless novel questions. Expand meaningful templates/categories to reduce repetition.
+
+Ranks are **editorial difficulty estimates**, not measured answer frequencies. Unlisted entries start at tier 3. Edit `data/editorial-ranks.json` and refresh to adjust future puzzles. Never infer rarity from name length or randomly assign it.
+
+The old Anthropic generator remains available only as `npm run legacy:refill`, and the old frequency tool as `npm run legacy:retier`. They operate on the legacy JSON bank, **not the production SQL catalog**. They are not run by the web service and do not automatically publish AI-generated answers.
+
+## API and game lifecycle
+
+- `GET /api/meta`: date, ranks, layers, source summary; creates the browser session cookie.
+- `POST /api/start` `{name?}`: start/resume the caller's daily round, saved reveal, or completed result. Client `playerId` fields are ignored.
+- `POST /api/answer` `{roundToken,index,input}`: one server-scored answer. Exact retries are safe.
+- `POST /api/next` `{roundToken,index}`: reveal the next prompt and start its deadline together. Retries cannot restart the timer.
+- `POST /api/report` `{roundToken,index,note?}`: report an already submitted answer for review. Reports do not change scoring.
+- `GET /api/leaderboard`: today's top 20.
+- `GET /api/health`: liveness. `GET /api/ready`: database/content readiness.
+- `GET /api/admin/reports`: latest 100 reports; requires `x-admin-token` matching `ADMIN_TOKEN`. Leave unset to disable.
+
+Reveal time is untimed. Refreshing during reveal restores that reveal; a paused next question remains hidden until Next. Refreshing an expired active question records one timeout. Cookie deletion creates a new anonymous identity; this is casual fair play, not verified-account anti-cheat. Accounts/payment processing are not implemented.
 
 ## Configuration
 
 | Variable | Default | Meaning |
-|---|---|---|
-| `PORT` | 3000 | HTTP port |
-| `DATA_DIR` | `./data` | Where `bank.json`, `schedule.json`, `results.json`, `answers-log.jsonl` live. Put this on a persistent volume in production. |
-| `TIMEZONE` | `UTC` | Timezone that decides when the day rolls over, e.g. `America/New_York` |
-| `LAUNCH_DATE` | `2026-11-15` | Puzzle #1 |
-| `QUESTION_SECONDS` | 25 | Time per prompt |
-| `QUESTIONS_PER_DAY` | 7 | Prompts per round |
-| `ADMIN_TOKEN` | unset | Enables `/api/admin/*` |
-| `TRUST_PROXY` | 0 | Set to `1` behind a proxy so rate limiting uses `X-Forwarded-For` |
-| `RATE_LIMIT_PER_MIN` | 120 | Per-IP API requests per minute |
-| `AUTO_REFILL` | 0 | Run the daily refill inside the server |
+| --- | --- | --- |
+| `PORT` | `3000` | HTTP listener; honors platform-assigned ports |
+| `DATABASE_URL` | unset | Shared PostgreSQL; otherwise SQLite |
+| `DATA_DIR` | `./data` | SQLite directory; persistent volume required |
+| `ALLOW_SQLITE_IN_PRODUCTION` | unset | Explicit opt-in for one instance with persistent SQLite storage |
+| `DB_POOL_SIZE` | `10` | PostgreSQL connections per app instance |
+| `TIMEZONE` | `UTC` | Shared daily reset timezone |
+| `LAUNCH_DATE` | `2026-11-15` | Puzzle numbering start |
+| `QUESTION_SECONDS` | `25` | Server-enforced clock |
+| `QUESTIONS_PER_DAY` | `7` | Daily question count, capped at 10 |
+| `PUBLIC_ORIGIN` | inferred host | Exact allowed browser origin, no trailing slash |
+| `TRUST_PROXY_HOPS` | `0` | Trusted forwarding hops counted from the right |
+| `RATE_LIMIT_PER_MIN` | `120` | Per-IP API requests; health/readiness excluded |
+| `RETENTION_DAYS` | `90` | Retain round state, inputs, reports, and results |
+| `ADMIN_TOKEN` | unset | Server-side owner reports credential |
 
-## Deploy
+`NODE_ENV=production` enables Secure cookies and HSTS. Serve it behind HTTPS. Local HTTP should use development mode. Cookies are required for play. Secrets never belong in frontend files or committed `.env` files.
 
-A `Dockerfile` is included. On Fly.io or Railway, mount a volume and point `DATA_DIR` at it.
+## Operations and upgrades
 
+```sh
+npm run db:migrate
+npm run maintenance
 ```
-fly launch --no-deploy            # then: fly volumes create data --size 1
-# set DATA_DIR=/data, TIMEZONE, ADMIN_TOKEN, ANTHROPIC_API_KEY, AUTO_REFILL=1, TRUST_PROXY=1
-fly deploy
+
+Maintenance also runs hourly and at startup. It deletes expired rate buckets and cascades deletion of rounds/results/reports older than the configured retention window, then prunes unreferenced snapshots and inactive identities. Configure retention before launch. Back up PostgreSQL using your provider or `pg_dump`; back up SQLite consistently using its backup API or while the app is stopped. Test restores.
+
+**Upgrading from v1:** legacy `bank.json`, `results.json`, schedules, and localStorage IDs are not automatically imported into SQL. They are left untouched. Archive them before upgrading an existing deployment; this release starts a new cookie-based identity system and a new reviewed bank. Do not delete legacy data expecting a migration. Published v2 snapshots are preserved across subsequent catalog updates and restarts. Future destructive schema changes require explicit migrations; the initial schema here is additive/idempotent.
+
+## Verification
+
+```sh
+npm test
+TEST_DATABASE_URL=postgres://user:password@localhost:5432/downstack_test npm test
+npm run test:browser  # after npx playwright install chromium
+TEST_DATABASE_URL=postgres://user:password@localhost:5432/downstack_load_test npm run test:load
 ```
 
-Run a single instance. Active rounds live in memory, so two instances would not share them.
+PostgreSQL integration/load checks require disposable database names ending in `_test`; the integration test truncates its test tables. Never point them at production. Browser checks launch their own isolated SQLite server, exercise a real source-backed round, reports, reload/reveal recovery, clipboard fallback, source links, pixel typography, and widths from 320px to 1440px. `BROWSER_PATH` can select an existing Chromium executable. Captures go into ignored `test-results/`.
 
-## Known limits (read before launch)
-
-- **Storage is JSON files.** Fine for hundreds of players a day. Past a few thousand, move `results.json` and the answer log to SQLite or Postgres; `lib/store.js` is the only file that touches disk.
-- **Active rounds are in memory.** A server restart mid-round drops that round, and the player can start a fresh one if they have not finished. They never lose a completed result.
-- **No accounts.** A player is a random id in localStorage, so clearing storage lets someone play twice. Add sign-in if the leaderboard needs to be tamper-resistant.
-- **Names are not profanity-filtered.** Only stripped to letters, digits, spaces, dots and dashes. Add a filter before a public launch.
-- **Content accuracy is your responsibility.** The seed bank was written by hand and checked for internal collisions, not against every official source. Skim it, and use the unmatched-input report to add valid answers players typed.
-- **Originality.** The mechanic of rewarding rare correct answers is generic, but write your own prompts, branding and visuals. Do not reuse another game's content.
-
-## Tests
-
-The redesign adds coverage for untimed reveals, prompt disclosure, idempotent Next, pause/resume, timeout classification, real depth positions, countdown boundaries, and startup scoring. There are 53 passing Node tests. Browser verification also exercised all six ranks, no-match, a full round, replay, clipboard fallback, network recovery, pending submission, and widths from 320px to 1440px.
-
-`npm test` covers the matcher (typos, prefixes, ambiguity), bank integrity (no alias collisions, tiers), daily scheduling (determinism, category spread, rejection swaps), game rules (scoring, timeouts, grace window, resume, one attempt per day, no answer leakage), the HTTP layer (security headers, path traversal, rate limiting, admin auth), and the refill pipeline against a fake Claude API (bogus answers dropped, budget cap, give-up after repeated rejections).
+CI runs tests against SQLite and PostgreSQL, browser checks, and a Docker build. Local smoke checks are evidence of working paths, not a substitute for production monitoring or a security audit.

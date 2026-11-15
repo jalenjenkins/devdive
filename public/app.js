@@ -18,19 +18,6 @@
   };
   const meters = (value) => new Intl.NumberFormat("en-US").format(value) + " m";
 
-  // Keep DevDive's storage keys so existing players retain their daily identity.
-  function playerId() {
-    if (state.playerId) return state.playerId;
-    try {
-      state.playerId =
-        localStorage.getItem("devdive.pid") || crypto.randomUUID();
-      localStorage.setItem("devdive.pid", state.playerId);
-    } catch {
-      state.playerId = crypto.randomUUID();
-    }
-    return state.playerId;
-  }
-
   function savedName() {
     try {
       return localStorage.getItem("devdive.name") || "";
@@ -295,6 +282,16 @@
     $("#reveal-fact").textContent = result.fact
       ? "Deep cut: " + result.fact
       : "";
+    const source = $("#reveal-source");
+    source.hidden = !result.source;
+    if (result.source) {
+      source.textContent = "Source: " + result.source.name;
+      source.href = result.source.url;
+    }
+    state.reportIndex = state.view.index;
+    $("#report-answer").hidden = result.matched || result.timedOut;
+    $("#report-answer").disabled = false;
+    $("#report-status").textContent = "";
     $("#reveal-rarest").textContent = result.rarest?.length
       ? "Other deep cuts: " + result.rarest.join(", ")
       : "";
@@ -417,9 +414,13 @@
     }
     setError("#intro-error");
     try {
-      const data = await api("/api/start", { playerId: playerId(), name });
+      const data = await api("/api/start", { name });
       if (data.finished) renderResults(data.summary);
-      else renderQuestion(data);
+      else if (data.reveal) {
+        state.token = data.roundToken;
+        state.view = data.reveal.question;
+        renderReveal(data.reveal);
+      } else renderQuestion(data);
     } catch (error) {
       setError(
         "#intro-error",
@@ -446,6 +447,11 @@
       $("#puzzle-date").textContent = meta.date;
       $("#puzzle-date").dateTime = meta.date;
       $("#question-duration").textContent = meta.questionSeconds;
+      $("#content-count").textContent =
+        meta.content.prompts +
+        " source-backed prompts across " +
+        meta.content.categories +
+        " categories. No live AI judging.";
       const list = $("#rank-list");
       list.replaceChildren();
       for (const rank of meta.tiers) {
@@ -484,6 +490,21 @@
   $("#retry-meta").addEventListener("click", loadMeta);
   $("#next").addEventListener("click", nextQuestion);
   $("#copy").addEventListener("click", copyResult);
+  $("#report-answer").addEventListener("click", async () => {
+    $("#report-answer").disabled = true;
+    try {
+      await api("/api/report", {
+        roundToken: state.token,
+        index: state.reportIndex,
+      });
+      $("#report-status").textContent =
+        "Reported for review. Today’s scoring stays unchanged.";
+    } catch {
+      $("#report-answer").disabled = false;
+      $("#report-status").textContent =
+        "Could not send the report. Please try again.";
+    }
+  });
   $("#answer-form").addEventListener("submit", (event) => {
     event.preventDefault();
     void submit();

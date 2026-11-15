@@ -98,7 +98,11 @@
             <details class="rank-guide">
               <summary>The startup ranks</summary>
               <ol id="rank-list"></ol>
-              <p>Ranks describe your answer’s rarity, not you.</p>
+              <p id="content-count"></p>
+              <p>
+                Ranks describe your answer’s rarity, not you. They are editorial
+                tiers, not population percentages.
+              </p>
             </details>
           </section>
           <section
@@ -143,7 +147,7 @@
                 autocorrect="off"
                 spellcheck="false"
                 placeholder="Type an answer"
-                  aria-describedby="q-text answer-help q-error"
+                aria-describedby="q-text answer-help q-error"
               />
               <div class="answer-actions">
                 <button id="submit" class="primary" type="submit">Submit</button
@@ -202,6 +206,17 @@
             <div class="reveal-details">
               <p id="reveal-fact"></p>
               <p id="reveal-rarest"></p>
+              <a
+                id="reveal-source"
+                class="source-link"
+                target="_blank"
+                rel="noopener noreferrer"
+                hidden
+              ></a>
+              <button id="report-answer" class="secondary" type="button" hidden>
+                My answer should count
+              </button>
+              <p id="report-status" role="status"></p>
             </div>
             <button id="next" class="primary" type="button">
               Next question

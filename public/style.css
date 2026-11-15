@@ -946,3 +946,18 @@ textarea {
     }
   }
 }
+
+.source-link {
+  display: block;
+  color: var(--text);
+  text-underline-offset: 4px;
+  margin: 16px 0;
+  overflow-wrap: anywhere;
+}
+#report-answer {
+  font-size: 12px;
+  margin-top: 14px;
+}
+#report-status {
+  margin-top: 10px;
+}

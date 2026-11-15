@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: downstack
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: TIMEZONE
+        value: America/New_York
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: DB_POOL_SIZE
+        value: "5"

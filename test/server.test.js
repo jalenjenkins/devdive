@@ -1,165 +1,294 @@
-'use strict';
+"use strict";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const { makeGameEnv, answerFor } = require("./helpers");
+const { createServer } = require("../lib/server");
+const { openDatabase } = require("../lib/database");
+const { loadConfig } = require("../lib/config");
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { makeEnv, answerFor } = require('./helpers');
-const { createServer } = require('../lib/server');
+test("production cannot silently use an ephemeral SQLite fallback", async () => {
+  await assert.rejects(
+    () => openDatabase(loadConfig({ NODE_ENV: "production" })),
+    /Production requires DATABASE_URL/,
+  );
+});
 
-async function boot(overrides) {
-  const env = makeEnv({ ADMIN_TOKEN: 'secret-token', RATE_LIMIT_PER_MIN: '1000', ...overrides });
-  const server = createServer({ config: env.config, store: env.store });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
-  const call = async (path, { method = 'GET', body, headers = {} } = {}) => {
-    const res = await fetch(base + path, {
+async function boot(overrides = {}) {
+  const env = await makeGameEnv({
+    ADMIN_TOKEN: "test-admin-token",
+    ...overrides,
+  });
+  const server = await createServer({
+    config: env.config,
+    database: env.db,
+    catalog: env.catalog,
+    now: () => env.clock.t,
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const base = "http://127.0.0.1:" + server.address().port;
+  let cookie = "";
+  const call = async (
+    path,
+    { method = "GET", body, headers = {}, useCookie = true } = {},
+  ) => {
+    const response = await fetch(base + path, {
       method,
-      headers: { 'content-type': 'application/json', ...headers },
+      headers: {
+        "content-type": "application/json",
+        ...(cookie && useCookie ? { cookie } : {}),
+        ...headers,
+      },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    const text = await res.text();
-    let json = null;
-    try { json = JSON.parse(text); } catch { /* not json */ }
-    return { status: res.status, json, text, headers: res.headers };
+    if (response.headers.get("set-cookie") && useCookie)
+      cookie = response.headers.get("set-cookie").split(";")[0];
+    const text = await response.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {}
+    return { status: response.status, json, text, headers: response.headers };
   };
-  const stop = async () => {
-    await new Promise((resolve) => server.close(resolve));
-    env.cleanup();
+  return {
+    env,
+    server,
+    base,
+    call,
+    getCookie: () => cookie,
+    stop: async () => {
+      await server.shutdown();
+      fs.rmSync(env.dir, { recursive: true, force: true });
+    },
   };
-  return { env, server, call, stop, base };
 }
 
-test('serves the front end with security headers', async () => {
+test("serves local assets, HEAD, cache validation, and security headers", async () => {
   const s = await boot();
   try {
-    const page = await s.call('/');
+    const page = await s.call("/");
     assert.equal(page.status, 200);
     assert.match(page.text, /Downstack/);
-    assert.match(page.headers.get('content-security-policy'), /default-src 'self'/);
-    assert.equal(page.headers.get('x-content-type-options'), 'nosniff');
-    assert.equal((await s.call('/app.js')).status, 200);
-    assert.equal((await s.call('/style.css')).status, 200);
-    assert.equal((await s.call('/ui.js')).status, 200);
-    const font = await fetch(s.base + '/fonts/press-start-2p.ttf');
-    assert.equal(font.status, 200);
-    assert.equal(font.headers.get('content-type'), 'font/ttf');
-    const art = await fetch(s.base + '/assets/shaft.png');
-    assert.equal(art.status, 200);
-    assert.equal(art.headers.get('content-type'), 'image/png');
+    assert.match(
+      page.headers.get("content-security-policy"),
+      /base-uri 'none'/,
+    );
+    assert.equal(page.headers.get("x-content-type-options"), "nosniff");
+    assert.ok(page.headers.get("x-request-id"));
+    assert.equal((await s.call("/ui.js")).status, 200);
+    const font = await fetch(s.base + "/fonts/press-start-2p.ttf");
+    assert.equal(font.headers.get("content-type"), "font/ttf");
+    const art = await fetch(s.base + "/assets/shaft.png");
+    assert.equal(art.headers.get("content-type"), "image/png");
+    const head = await fetch(s.base + "/", { method: "HEAD" });
+    assert.equal(await head.text(), "");
+    assert.ok(Number(head.headers.get("content-length")) > 0);
+    assert.equal(
+      (
+        await s.call("/", {
+          headers: { "if-none-match": page.headers.get("etag") },
+        })
+      ).status,
+      304,
+    );
+    assert.equal((await s.call("/..%2f..%2fpackage.json")).status, 404);
+    assert.equal((await s.call("/data/catalog.json")).status, 404);
+    assert.equal((await s.call("/api/health")).json.ok, true);
+    assert.equal((await s.call("/api/ready")).json.storage, "sqlite");
   } finally {
     await s.stop();
   }
 });
 
-test('blocks path traversal', async () => {
+test("plays a complete HTTP round with a server cookie, stable retry, and replay", async () => {
   const s = await boot();
   try {
-    const res = await s.call('/..%2f..%2fpackage.json');
-    assert.equal(res.status, 404);
-    assert.ok(!/devdive/.test(res.text) || !res.text.includes('"scripts"'));
-  } finally {
-    await s.stop();
-  }
-});
-
-test('plays a full round over HTTP without ever seeing the answer bank early', async () => {
-  const s = await boot();
-  try {
-    const meta = await s.call('/api/meta');
+    const meta = await s.call("/api/meta");
     assert.equal(meta.json.tiers.length, 6);
     assert.equal(meta.json.layers.length, 7);
-
-    const start = await s.call('/api/start', { method: 'POST', body: { playerId: 'http-player-0001', name: 'Grace' } });
-    assert.equal(start.status, 200);
-    assert.equal(start.json.finished, false);
-    assert.ok(!('answers' in start.json.prompt));
-
-    const bank = s.env.store.bank.read();
-    let view = start.json;
+    const cookie = meta.headers.get("set-cookie");
+    assert.match(cookie, /HttpOnly/);
+    assert.match(cookie, /SameSite=Lax/);
+    let view = (
+      await s.call("/api/start", {
+        method: "POST",
+        body: { name: "Grace", playerId: "client-id-is-ignored" },
+      })
+    ).json;
+    assert.ok(!("answers" in view.prompt));
     let last;
     for (let i = 0; i < 7; i++) {
-      const prompt = bank.prompts.find((p) => p.id === view.prompt.id);
-      last = await s.call('/api/answer', {
-        method: 'POST',
-        body: { roundToken: view.roundToken, index: view.index, input: answerFor(prompt, 4) },
-      });
+      const prompt = s.env.catalog.prompts.find((p) => p.id === view.prompt.id);
+      const payload = {
+        roundToken: view.roundToken,
+        index: view.index,
+        input: answerFor(prompt, 4),
+      };
+      last = await s.call("/api/answer", { method: "POST", body: payload });
       assert.equal(last.status, 200);
-      assert.equal(last.json.result.points, 55);
+      assert.deepEqual(
+        (await s.call("/api/answer", { method: "POST", body: payload })).json,
+        last.json,
+      );
       if (last.json.next) {
-        assert.ok(!('prompt' in last.json.next));
-        const next = await s.call('/api/next', { method: 'POST', body: { roundToken: view.roundToken, index: last.json.next.index } });
-        assert.equal(next.status, 200);
-        view = next.json;
+        assert.ok(!("prompt" in last.json.next));
+        view = (
+          await s.call("/api/next", {
+            method: "POST",
+            body: { roundToken: view.roundToken, index: last.json.next.index },
+          })
+        ).json;
       }
     }
     assert.equal(last.json.score, 385);
-    assert.equal(last.json.summary.depth, 2800);
-    assert.equal(last.json.summary.layer.name, 'Operating System');
-
-    const replay = await s.call('/api/start', { method: 'POST', body: { playerId: 'http-player-0001' } });
-    assert.equal(replay.json.finished, true);
-
-    const board = await s.call('/api/leaderboard');
-    assert.equal(board.json.entries[0].name, 'Grace');
-    assert.equal(board.json.entries[0].score, 385);
+    assert.equal(last.json.depth, 2800);
+    assert.equal(
+      (await s.call("/api/start", { method: "POST", body: {} })).json.finished,
+      true,
+    );
+    assert.equal(
+      (await s.call("/api/leaderboard")).json.entries[0].name,
+      "Grace",
+    );
   } finally {
     await s.stop();
   }
 });
 
-test('rejects bad input cleanly', async () => {
+test("client-supplied identity cannot select another player and foreign sessions cannot use tokens", async () => {
   const s = await boot();
   try {
-    assert.equal((await s.call('/api/start', { method: 'POST', body: { playerId: 'x' } })).status, 400);
-    assert.equal((await s.call('/api/answer', { method: 'POST', body: { roundToken: 'nope', index: 0, input: 'a' } })).status, 404);
-    const bad = await fetch(`${s.base}/api/start`, { method: 'POST', body: '{not json', headers: { 'content-type': 'application/json' } });
-    assert.equal(bad.status, 400);
-    const big = await fetch(`${s.base}/api/start`, { method: 'POST', body: 'x'.repeat(50000) }).catch(() => null);
-    assert.ok(big === null || big.status === 413);
-    assert.equal((await s.call('/api/nothing')).status, 404);
-    assert.equal((await s.call('/', { method: 'POST', body: {} })).status, 405);
+    await s.call("/api/meta");
+    const a = (
+      await s.call("/api/start", { method: "POST", body: { playerId: "a" } })
+    ).json;
+    const same = (
+      await s.call("/api/start", { method: "POST", body: { playerId: "b" } })
+    ).json;
+    assert.equal(a.roundToken, same.roundToken);
+    const stolen = await s.call("/api/answer", {
+      method: "POST",
+      body: { roundToken: a.roundToken, index: 0, input: "anything" },
+      useCookie: false,
+    });
+    assert.equal(stolen.status, 404);
   } finally {
     await s.stop();
   }
 });
 
-test('rate limiting returns 429', async () => {
-  const s = await boot({ RATE_LIMIT_PER_MIN: '5' });
-  try {
-    let last = 0;
-    for (let i = 0; i < 8; i++) last = (await s.call('/api/health')).status;
-    assert.equal(last, 429);
-  } finally {
-    await s.stop();
-  }
-});
-
-test('admin routes are hidden without the token and work with it', async () => {
+test("validates body types, size, origin, input length and content type", async () => {
   const s = await boot();
   try {
-    assert.equal((await s.call('/api/admin/preview')).status, 404);
-    assert.equal((await s.call('/api/admin/preview', { headers: { 'x-admin-token': 'wrong' } })).status, 404);
-
-    const ok = { 'x-admin-token': 'secret-token' };
-    const preview = await s.call('/api/admin/preview?date=2027-01-01', { headers: ok });
-    assert.equal(preview.status, 200);
-    assert.equal(preview.json.prompts.length, 7);
-
-    const id = preview.json.prompts[0].id;
-    const reject = await s.call('/api/admin/reject', { method: 'POST', body: { id }, headers: ok });
-    assert.equal(reject.status, 200);
-    const after = await s.call('/api/admin/preview?date=2027-01-01', { headers: ok });
-    assert.ok(!after.json.prompts.some((p) => p.id === id));
-    assert.equal(after.json.prompts.length, 7);
+    assert.equal(
+      (await s.call("/api/start", { method: "POST", body: { name: {} } }))
+        .status,
+      400,
+    );
+    assert.equal(
+      (
+        await s.call("/api/answer", {
+          method: "POST",
+          body: { roundToken: "bad", index: 0, input: "x".repeat(81) },
+        })
+      ).status,
+      400,
+    );
+    assert.equal(
+      (await s.call("/api/start", { method: "POST", body: [] })).status,
+      400,
+    );
+    assert.equal(
+      (
+        await s.call("/api/start", {
+          method: "POST",
+          body: {},
+          headers: { origin: "https://evil.example" },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await s.call("/api/start", {
+          method: "POST",
+          body: {},
+          headers: { "content-type": "text/plain" },
+        })
+      ).status,
+      415,
+    );
+    assert.equal(
+      (
+        await fetch(s.base + "/api/start", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: "{not json",
+        })
+      ).status,
+      400,
+    );
+    assert.equal(
+      (
+        await s.call("/api/start", {
+          method: "POST",
+          body: { name: "x".repeat(20000) },
+        })
+      ).status,
+      413,
+    );
+    assert.equal((await s.call("/", { method: "POST", body: {} })).status, 405);
   } finally {
     await s.stop();
   }
 });
 
-test('admin routes stay off when no token is configured', async () => {
-  const s = await boot({ ADMIN_TOKEN: '' });
+test("rate limit persists in storage and ignores spoofed leftmost forwarded IP", async () => {
+  const s = await boot({ RATE_LIMIT_PER_MIN: "3", TRUST_PROXY_HOPS: "1" });
   try {
-    const res = await s.call('/api/admin/preview', { headers: { 'x-admin-token': '' } });
-    assert.equal(res.status, 404);
+    for (let i = 0; i < 3; i++)
+      assert.equal(
+        (
+          await s.call("/api/meta", {
+            headers: { "x-forwarded-for": "1.2.3." + i + ", 10.0.0.1" },
+          })
+        ).status,
+        200,
+      );
+    const blocked = await s.call("/api/meta", {
+      headers: { "x-forwarded-for": "8.8.8.8, 10.0.0.1" },
+    });
+    assert.equal(blocked.status, 429);
+    assert.equal(blocked.headers.get("retry-after"), "60");
+    assert.equal((await s.call("/api/health")).status, 200);
+  } finally {
+    await s.stop();
+  }
+});
+
+test("reports can be submitted and admin access is hidden without its token", async () => {
+  const s = await boot();
+  try {
+    const v = (await s.call("/api/start", { method: "POST", body: {} })).json;
+    await s.call("/api/answer", {
+      method: "POST",
+      body: { roundToken: v.roundToken, index: 0, input: "missing-answer-xyz" },
+    });
+    assert.equal(
+      (
+        await s.call("/api/report", {
+          method: "POST",
+          body: { roundToken: v.roundToken, index: 0, note: "Please check" },
+        })
+      ).status,
+      200,
+    );
+    assert.equal((await s.call("/api/admin/reports")).status, 404);
+    const reports = await s.call("/api/admin/reports", {
+      headers: { "x-admin-token": "test-admin-token" },
+    });
+    assert.equal(reports.json.reports.length, 1);
+    assert.equal(reports.json.reports[0].input, "missing-answer-xyz");
   } finally {
     await s.stop();
   }

@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+node_modules
+test
+data/*.sqlite*
+data/*.db*
+data/bank.json
+data/results.json
+data/schedule.json
+data/answers-log.jsonl
+coverage
+test-results

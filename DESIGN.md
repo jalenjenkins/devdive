@@ -78,4 +78,4 @@ Square inputs, crisp pixel icons, and small stepped button edges. No rounded car
 - **Do** keep startup ranks distinct from computing layers and question progress.
 - **Don't** invent answer-frequency percentages, extra currencies, lives, or XP.
 - **Don't** put illustrated textures behind essential text.
-- **Don't** reset legacy daily player storage on a rebrand.
+- **Do** keep identity invisible during play and preserve display-name preferences; the session is managed by the server.

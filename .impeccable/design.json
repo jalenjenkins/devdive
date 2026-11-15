@@ -173,7 +173,7 @@
       "Do not use purple, yellow, or green themes.",
       "Do not invent answer-frequency percentages, extra currencies, lives, or XP.",
       "Do not put illustrated textures behind essential text.",
-      "Do not reset legacy daily player storage on a rebrand.",
+      "Keep identity invisible during play and preserve display-name preferences; the session is managed by the server.",
       "Do not introduce rounded cards or glass effects."
     ]
   }

@@ -1,0 +1,39 @@
+name: Refresh reference content
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * 1"
+permissions:
+  contents: write
+  pull-requests: write
+concurrency:
+  group: reference-content-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: npm ci
+      - run: npm install --save-dev --save-exact @mdn/browser-compat-data@latest
+      - run: npm run content:refresh
+      - run: npm test
+      - name: Propose reviewed content update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- data/catalog.json data/editorial-ranks.json package.json package-lock.json; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c content/refresh-${GITHUB_RUN_ID}
+          git add data/catalog.json package.json package-lock.json
+          git commit -m "Refresh versioned reference question catalog"
+          git push origin HEAD
+          gh pr create --title "Refresh reference question catalog" --body "Updates pinned source data and accepted-answer snapshots. Review question wording, source changes, and editorial tiers before merging. Published daily puzzles remain frozen." --base main

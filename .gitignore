@@ -14,3 +14,10 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# Durable local database and its journals
+data/*.sqlite*
+data/*.db*
+coverage/
+playwright-report/
+test-results/
