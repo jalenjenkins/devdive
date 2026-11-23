@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "version": "0afa8ba66dfe6fa5f30f47d7",
-  "generatedAt": "2026-11-15T02:06:57.916Z",
+  "version": "028a3ce3f6ed44309656ef0b",
+  "generatedAt": "2026-11-23T20:54:32.750Z",
   "rarityPolicy": "Provisional editorial difficulty, not measured population rarity. Unlisted entries start at tier 3. Updates only affect future daily snapshots.",
   "sources": [
     {
       "id": "mdn-bcd",
       "name": "MDN Browser Compatibility Data",
-      "version": "8.1.9",
+      "version": "8.1.10",
       "url": "https://github.com/mdn/browser-compat-data",
       "license": "CC0-1.0",
       "licenseUrl": "https://github.com/mdn/browser-compat-data/blob/main/LICENSE"
@@ -15,7 +15,7 @@
     {
       "id": "python",
       "name": "Python standard library and language runtime",
-      "version": "3.12.14",
+      "version": "3.12.16",
       "url": "https://docs.python.org/3/library/",
       "license": "PSF-2.0",
       "licenseUrl": "https://docs.python.org/3/license.html"
@@ -23,7 +23,7 @@
     {
       "id": "node",
       "name": "Node.js public runtime identifiers",
-      "version": "v24.22.1",
+      "version": "v24.22.3",
       "url": "https://nodejs.org/api/",
       "license": "MIT",
       "licenseUrl": "https://github.com/nodejs/node/blob/main/LICENSE"
@@ -31,7 +31,7 @@
     {
       "id": "git",
       "name": "Git command reference",
-      "version": "git version 2.52.0",
+      "version": "git version 2.56.1",
       "url": "https://git-scm.com/docs/git",
       "license": "Identifier facts; Git source is GPL-2.0",
       "licenseUrl": "https://github.com/git/git/blob/master/COPYING"
@@ -17122,7 +17122,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "abc",
@@ -18221,7 +18221,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "and",
@@ -18408,7 +18408,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "ArithmeticError",
@@ -18769,7 +18769,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "abs",
@@ -19479,7 +19479,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "acos",
@@ -19920,7 +19920,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "accumulate",
@@ -20071,7 +20071,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "cache",
@@ -20180,7 +20180,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "ChainMap",
@@ -20254,7 +20254,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "correlation",
@@ -20405,7 +20405,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "abs",
@@ -20802,7 +20802,7 @@
       "sourceId": "python",
       "status": "ready",
       "source": "reference-data",
-      "fact": "Accepted names come from Python 3.12.14.",
+      "fact": "Accepted names come from Python 3.12.16.",
       "answers": [
         {
           "canonical": "date",
@@ -21972,11 +21972,6 @@
           "tier": 3
         },
         {
-          "canonical": "archimport",
-          "aliases": [],
-          "tier": 3
-        },
-        {
           "canonical": "archive",
           "aliases": [],
           "tier": 4
@@ -22057,11 +22052,6 @@
           "tier": 3
         },
         {
-          "canonical": "citool",
-          "aliases": [],
-          "tier": 3
-        },
-        {
           "canonical": "clean",
           "aliases": [],
           "tier": 3
@@ -22113,21 +22103,6 @@
         },
         {
           "canonical": "credential-store",
-          "aliases": [],
-          "tier": 3
-        },
-        {
-          "canonical": "cvsexportcommit",
-          "aliases": [],
-          "tier": 3
-        },
-        {
-          "canonical": "cvsimport",
-          "aliases": [],
-          "tier": 3
-        },
-        {
-          "canonical": "cvsserver",
           "aliases": [],
           "tier": 3
         },
@@ -22223,6 +22198,11 @@
           "tier": 4
         },
         {
+          "canonical": "format-rev",
+          "aliases": [],
+          "tier": 3
+        },
+        {
           "canonical": "fsck",
           "aliases": [],
           "tier": 4
@@ -22248,17 +22228,17 @@
           "tier": 3
         },
         {
-          "canonical": "gui",
-          "aliases": [],
-          "tier": 3
-        },
-        {
           "canonical": "hash-object",
           "aliases": [],
           "tier": 5
         },
         {
           "canonical": "help",
+          "aliases": [],
+          "tier": 3
+        },
+        {
+          "canonical": "history",
           "aliases": [],
           "tier": 3
         },
@@ -22456,11 +22436,6 @@
           "tier": 4
         },
         {
-          "canonical": "p4",
-          "aliases": [],
-          "tier": 3
-        },
-        {
           "canonical": "pack-objects",
           "aliases": [],
           "tier": 3
@@ -22639,11 +22614,6 @@
           "tier": 3
         },
         {
-          "canonical": "send-email",
-          "aliases": [],
-          "tier": 3
-        },
-        {
           "canonical": "send-pack",
           "aliases": [],
           "tier": 3
@@ -22710,7 +22680,7 @@
           "tier": 4
         },
         {
-          "canonical": "svn",
+          "canonical": "subtree",
           "aliases": [],
           "tier": 3
         },
@@ -22762,6 +22732,11 @@
         },
         {
           "canonical": "upload-pack",
+          "aliases": [],
+          "tier": 3
+        },
+        {
+          "canonical": "url-parse",
           "aliases": [],
           "tier": 3
         },

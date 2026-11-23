@@ -27,7 +27,7 @@
     "pg": "8.23.1"
   },
   "devDependencies": {
-    "@mdn/browser-compat-data": "8.1.9",
+    "@mdn/browser-compat-data": "8.1.10",
     "playwright": "1.65.1"
   }
 }
